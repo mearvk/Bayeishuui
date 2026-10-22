@@ -55,18 +55,18 @@ static void fighter(int x,int y,int scale,int player,int guard,int strike) {
 static const char *opponents[15] = {"Milo Quickstep","Jax Ironhand","Nia Swift","Bram Stone","Kira Storm","Dante Cross","Sora Blade","Viktor Voss","Mei Dragon","Orion Vale","Zara Night","Cassian Wolf","Rhea Titan","Kael Thunder","The First Fang"};
 static const char *guild_ranks[15] = {"Initiate","Copper","Bronze","Silver","Gold","Platinum","Jade","Ruby","Sapphire","Emerald","Obsidian","Master","Grandmaster","Champion","Guild Legend"};
 static void render(int w,int h,double hp,double ehp,double stamina,double estamina,double gap,int px,int ex,int guard,int strike,const char *message,int frame,int rank) {
-    int scene=h-8; if(scene<10) scene=10; if(scene>24) scene=24;
+    int scene=h-9; if(scene<9) scene=9; if(scene>23) scene=23;
     printf("\033[2J\033[H");
     bg(7,13,25); color(130,205,255);
-    printf("  BAYEISHUUI  /  FIGHTER GUILD     ");
-    color(255,205,115); printf("RANK %02d/15 %s — %s",rank,guild_ranks[rank-1],opponents[rank-1]);
-    color(220,225,235); printf("\n");
+    printf("  BAYEISHUUI  /  FIGHTER GUILD");
+    color(255,205,115); printf("  RANK %02d/15: %s\n",rank,guild_ranks[rank-1]);
+    color(220,225,235); printf("  OPPONENT: %s  |  DISTANCE %.1fm\n",opponents[rank-1],gap);
     color(255,195,100); printf("DISTANCE %.1fm\n",gap);
     bar("YOU ",hp,14,70,220,255); bar("RIVAL",ehp,14,255,90,105); printf("\n");
     bar("STAMINA",stamina,12,95,235,155); bar("RIVAL",estamina,12,255,180,90); printf("\n");
     int horizon=scene/3;
     for(int y=0;y<scene;y++){
-        printf("\033[%d;1H",y+4);
+        printf("\033[%d;1H",y+5);
         if(y<horizon) { color(30+y*2,42+y*2,62+y*3); for(int x=0;x<w;x++) printf(" "); }
         else {
             for(int x=0;x<w;x++){

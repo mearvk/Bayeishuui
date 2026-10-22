@@ -1,53 +1,43 @@
-# Bayeishuui — The Hollow Gate
+# Bayeishuui — Martial Arts Combat
 
-A small, turn-based terminal adventure for Linux. Explore a procedurally carved cave, fight cave wardens, recover the golden relic, and escape through the gate across three levels.
+Bayeishuui is evolving into a martial-arts striking game built around deliberate movement, spacing, timing, and readable opponent behavior. The intended presentation is an over-the-shoulder, third-person view: the player's superior fighter is seen from behind while the opponent faces them across the arena.
 
-## Requirements
+## Repository layout
 
-- Linux or another POSIX-like system with an ANSI-compatible terminal
-- Python 3.10+
-- No third-party packages
+- `inventory/bayeshuui.py` — preserved, dependency-free Python terminal adventure from the project's initial prototype.
+- `MARTIAL_ARTS_DESIGN.md` — core vision, perspective, combat loop, and development phases.
+- `CONTROLS_AND_COMBAT.md` — the five-button input contract and combat rules.
+- `Makefile` — convenience commands for the legacy terminal game and basic Python syntax checks.
 
-## Run
+The original terminal game is retained as a separate inventory item; it is not yet the third-person fighting implementation.
+
+## Current prototype: terminal adventure
+
+Requirements: Python 3.10+ and a Linux/POSIX-compatible interactive terminal. No third-party packages are required.
 
 ```sh
-chmod +x bayeshuui.py
-./bayeshuui.py
+make check
+make run
 ```
 
-Or use `python3 bayeshuui.py`. The game uses terminal raw/cbreak input, so run it in an interactive terminal rather than piping input into it.
+Run the inventory game directly with `python3 inventory/bayeshuui.py`.
 
-## Controls
+## Planned fighting-game controls
 
 | Key | Action |
 | --- | --- |
-| W / A / S / D | Move north / west / south / east |
-| Arrow keys | Move |
-| F | Attack an adjacent cave warden |
-| P | Drink a healing potion |
-| Q | Quit |
+| W | Advance toward the opponent |
+| A | Move/circle left |
+| S | Retreat |
+| D | Move/circle right |
+| Space | Strike |
 
-## Goal
+The target design keeps these five inputs as the primary controls. The first playable combat prototype should implement movement, facing, strike range, wind-up/recovery, health, and a basic opponent AI before expanding the move set.
 
-Collect the golden relic (`*`) on each level, then reach the gate (`>`). Survive all three levels to win. Wardens pursue you and attack when adjacent. Potions restore up to 5 health points.
+## Development status
 
-## Map symbols
+The martial-arts direction and control contract are documented; a real-time graphical renderer, third-person camera, animated fighters, and fighting-game loop still need implementation. See the design documents before choosing a graphics engine.
 
-- `@` — player
-- `#` — stone wall
-- `.` — cave floor
-- `g` — cave warden
-- `!` — potion (reserved for future map placements)
-- `*` — golden relic
-- `>` — exit gate
+## License
 
-## Development
-
-Run the basic checks with:
-
-```sh
-python3 -m py_compile bayeshuui.py
-make check
-```
-
-The game is dependency-free and intended as a simple, extensible starting point. Contributions remain subject to the repository's Eclipse Public License 2.0; see [LICENSE](LICENSE).
+This project is distributed under the Eclipse Public License 2.0; see [LICENSE](LICENSE).

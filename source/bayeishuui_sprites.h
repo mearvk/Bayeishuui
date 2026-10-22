@@ -112,8 +112,6 @@ static inline void bay_sprite_draw(int x, int y, int player, int style,
     }
 
     int v[24], a[24], b[24];
-    const int *unused = NULL;
-    (void)unused;
     a[0]=p.hx;a[1]=p.hy;a[2]=p.nx;a[3]=p.ny;a[4]=p.sx;a[5]=p.sy;
     a[6]=p.lex;a[7]=p.ley;a[8]=p.lwx;a[9]=p.lwy;a[10]=p.rex;a[11]=p.rey;a[12]=p.rwx;a[13]=p.rwy;
     a[14]=p.hipx;a[15]=p.hipy;a[16]=p.lkx;a[17]=p.lky;a[18]=p.lfx;a[19]=p.lfy;a[20]=p.rkx;a[21]=p.rky;a[22]=p.rfx;a[23]=p.rfy;

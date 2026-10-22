@@ -34,6 +34,17 @@ static const char *const bay_sprite_poses[BAY_SPRITE_POSE_COUNT][5] = {
     {"  _O_    ", " /___\\   ", "    \\   ", "  /  \\   ", " /    \\  "}  /* finish / submission */
 };
 
+static const char *const bay_sprite_style_arms[15] = {
+    "  /|\\    ", "  \\|/    ", " _/|\\    ", "  /|---->", "  /|\\    ",
+    "  /|--    ", "  \\|/    ", " _/|\\    ", "  /|---->", "  \\|/    ",
+    "  /|\\    ", "  /|--    ", "  /|\\    ", "  \\|/    ", "  /|\\    "
+};
+static const char *const bay_sprite_style_legs[15] = {
+    "  / \\    ", " /  \\    ", "  / \\    ", " /   >    ", "  /  >    ",
+    "  / \\    ", " /  \\    ", " _/ \\    ", " /   >    ", "  / \\    ",
+    " /  \\    ", "  / \\    ", " /   >    ", "  / \\    ", " /  \\    "
+};
+
 static inline void bay_sprite_color(int player, int style) {
     static const unsigned char palette[15][3] = {
         {255,170,105},{245,130,95},{125,220,255},{255,190,100},{190,150,255},
@@ -86,6 +97,11 @@ static inline void bay_sprite_draw(int x, int y, int player, int style,
             line = bay_sprite_poses[next_pose][row];
         else if (!ground_mode && !guarding && !striking && beat >= 10)
             line = bay_sprite_poses[next_pose][row];
+        if (!ground_mode && !guarding && !striking && (pose == 0 || pose == 1 || pose == 10)) {
+            int style_id = (style < 0 ? 0 : style % 15);
+            if (row == 1) line = bay_sprite_style_arms[style_id];
+            if (row == 3) line = bay_sprite_style_legs[style_id];
+        }
         if (ground_mode && beat >= 5 && row == 1)
             line = (beat % 2) ? " __|____ " : "  _|____ ";
         printf("\033[%d;%dH", y + row, x);

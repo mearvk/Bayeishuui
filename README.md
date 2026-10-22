@@ -1,52 +1,58 @@
 # Bayeishuui — Martial Arts Combat
 
-Bayeishuui is a Linux-terminal martial-arts duel focused on striking, footwork, range, stamina, and reading an opponent's behavior. The terminal renderer uses perspective floor lines and stylized fighter silhouettes to suggest an over-the-shoulder view: the player's fighter is in the foreground, viewed from behind, while the opponent faces them ahead.
+Bayeishuui is a Linux-terminal martial-arts duel focused on striking, footwork, range, stamina, and reading an opponent's behavior. The native renderer uses ANSI true-colour and Unicode terminal drawing to create a perspective dojo floor, coloured fighter silhouettes, health/stamina meters, range feedback, and live combat messages.
 
-## Run
+## Native C and C++ builds
 
-Requirements: Python 3.10+ and an interactive Linux/POSIX terminal at least 60 columns by 25 rows. No third-party Python packages are required.
+The native game is in `/source` and has two standalone implementations. They require no third-party graphics libraries.
+
+```sh
+make build-c
+make run-c
+
+make build-cpp
+make run-cpp
+```
+
+To compile all implementations and run the Python syntax check:
 
 ```sh
 make check
-make run
 ```
 
-Optional difficulty settings:
+Requirements for the native games: GCC or Clang, a Linux/POSIX terminal supporting ANSI escape sequences and UTF-8, and a terminal at least 60 columns by 24 rows. The graphics are rendered directly in the terminal; this is not hardware-accelerated 3D.
 
-```sh
-python3 inventory/bayeshuui.py --difficulty easy
-python3 inventory/bayeshuui.py --difficulty normal
-python3 inventory/bayeshuui.py --difficulty hard
-``
-
-## Controls
+## Native controls
 
 | Key | Action |
 | --- | --- |
 | W | Advance toward the opponent |
-| A | Circle left |
+| A / D | Circle left / right |
 | S | Retreat |
-| D | Circle right |
 | Space | Strike |
+| G | Guard |
 | Q | Quit the bout |
 
-## Combat
+## Python version
 
-- Strike range and lateral alignment affect whether a punch connects.
-- Strikes have wind-up, active impact, and recovery phases.
-- Clean hits reduce health and briefly stun the target.
-- Guarding reduces damage; stamina regenerates more quickly when resting.
-- The opponent approaches, attacks, guards, and recovers based on difficulty.
+The original Python terminal implementation remains in `inventory/bayeshuui.py`:
+
+```sh
+make run
+python3 inventory/bayeshuui.py --difficulty hard
+```
 
 ## Repository layout
 
-- `inventory/bayeshuui.py` — playable Python terminal fighting game.
-- `inventory/README.md` — inventory game notes.
+- `source/bayeishuui.c` — native C11 terminal game.
+- `source/bayeishuui.cpp` — native C++17 terminal game.
+- `source/README.md` — native build and renderer notes.
+- `inventory/bayeshuui.py` — Python terminal game.
 - `MARTIAL_ARTS_DESIGN.md` — design direction and future phases.
 - `CONTROLS_AND_COMBAT.md` — input and combat contract.
-- `Makefile` — `make run` and `make check`.
+- `Makefile` — build, run, check, and clean targets.
 
-The terminal game is intentionally a stylized approximation, not a true 3D renderer or a biomechanically validated fighting simulator. It is the playable first step toward the over-the-shoulder perspective.
+The game is a stylized terminal-rendered approximation rather than a true 3D renderer or a biomechanically validated fighting simulator.
 
 ## License
 

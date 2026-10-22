@@ -14,13 +14,27 @@ make build-cpp
 make run-cpp
 ```
 
-To compile all implementations and run the Python syntax check:
+To compile all implementations and run the Python syntax checks:
 
 ```sh
 make check
 ```
 
 Requirements for the native games: GCC or Clang, a Linux/POSIX terminal supporting ANSI escape sequences and UTF-8, and a terminal at least 60 columns by 24 rows. The graphics are rendered directly in the terminal; this is not hardware-accelerated 3D.
+
+## Player 1 computer fighter
+
+A tactical, engine-neutral Player 1 AI and input contract are provided in `source/bayeishuui_ai.py`. It chooses actions based on health, stamina, range, alignment, attack timing, and ground-game state.
+
+```sh
+make run-ai
+# or
+python3 source/bayeishuui_ai.py
+```
+
+This command creates a unique `RANDOMTOKEN_YYYYMMDD_ACCOUNT.cfg` file in the **current working directory**. The file includes a local timestamp, operating-system account, Player 1 designation, and the state/action API contract. Existing files are never overwritten.
+
+The AI exposes `choose_action(state)` for a future engine bridge. It is a strong heuristic baseline, not a mathematical guarantee of perfect play. The native C/C++ games currently own their terminal input loops; the adapter does not yet inject actions into a running native game. See [Player 1 AI API](source/AI_PLAYER_API.md) for the normalized state schema and integration boundary.
 
 ## Fighter Guild campaign
 
@@ -67,11 +81,14 @@ python3 inventory/bayeshuui.py --difficulty hard
 
 - `source/bayeishuui.c` — native C11 terminal game.
 - `source/bayeishuui.cpp` — native C++17 terminal game.
+- `source/bayeishuui_sprites.h` — shared terminal sprite engine.
+- `source/bayeishuui_ai.py` — Player 1 tactical AI and run-config writer.
+- `source/AI_PLAYER_API.md` — AI state schema and engine integration contract.
 - `source/README.md` — native build and renderer notes.
 - `inventory/bayeshuui.py` — Python terminal game.
 - `MARTIAL_ARTS_DESIGN.md` — design direction and future phases.
 - `CONTROLS_AND_COMBAT.md` — input and combat contract.
-- `Makefile` — build, run, check, and clean targets.
+- `Makefile` — build, run, AI, check, and clean targets.
 
 The game is a stylized terminal-rendered approximation rather than a true 3D renderer or a biomechanically validated fighting simulator.
 

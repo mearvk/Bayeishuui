@@ -11,7 +11,7 @@ import termios
 import tty
 from dataclasses import dataclass
 
-WIDTH, HEIGHT =  forty = 40, 16
+WIDTH, HEIGHT = 40, 16
 WALL, FLOOR, PLAYER, EXIT, ENEMY, POTION, RELIC = "#", ".", "@", ">", "g", "!", "*"
 COLORS = {
     WALL: "\033[90m", FLOOR: "\033[2m", PLAYER: "\033[96;1m",
@@ -70,6 +70,7 @@ class Game:
         self.rng.shuffle(candidates)
         for ex, ey in candidates[:min(4 + self.level, 9)]:
             self.enemies.append(Enemy(ex, ey, hp=2 + self.level // 2))
+        self.has_relic = False
         self.message = f"Level {self.level}: recover the relic (*) and find the gate (>)."
 
     def draw(self) -> None:

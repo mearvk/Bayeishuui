@@ -101,7 +101,7 @@ static inline void bay_sprite_draw(int x, int y, int player, int style,
         p = bay_sprite_poses[pose_id]; q = bay_sprite_poses[next_id];
         fraction = (styled * 3) % BAY_SPRITE_FRAME_COUNT;
     } else if (striking) {
-        pose_id = style_id % 3 == 0 ? 4 : style_id % 3 == 1 ? 6 : 8;
+        pose_id = style_id % 5 == 0 ? 4 : style_id % 5 == 1 ? 6 : style_id % 5 == 2 ? 7 : style_id % 5 == 3 ? 8 : 3;
         p = bay_sprite_poses[pose_id]; q = bay_sprite_poses[pose_id == 4 ? 10 : 0];
         fraction = styled % 61;
         denominator = 61;
@@ -121,10 +121,12 @@ static inline void bay_sprite_draw(int x, int y, int player, int style,
     for (int i=0;i<24;++i) v[i]=bay_sprite_lerp(a[i],b[i],fraction,denominator);
 
     /* Signature stance: 15 style identities vary lead side and foot placement. */
-    int side = style_id % 3;
+    int side = style_id % 5;
     if (!ground_mode && !striking && !guarding) {
         if (side == 1) { v[6]--; v[8]--; v[20]++; v[22]++; }
         else if (side == 2) { v[10]++; v[12]++; v[16]--; v[18]--; }
+        else if (side == 3) { v[8]--; v[12]++; v[7]--; v[11]--; }
+        else if (side == 4) { v[18]--; v[22]++; v[19]++; v[23]++; }
     }
 
     char canvas[BAY_SPRITE_H][BAY_SPRITE_W + 1];
@@ -140,6 +142,9 @@ static inline void bay_sprite_draw(int x, int y, int player, int style,
     bay_sprite_line(canvas,v[4],v[5],v[10],v[11]); bay_sprite_line(canvas,v[10],v[11],v[12],v[13]);
     bay_sprite_line(canvas,v[14],v[15],v[16],v[17]); bay_sprite_line(canvas,v[16],v[17],v[18],v[19]);
     bay_sprite_line(canvas,v[14],v[15],v[20],v[21]); bay_sprite_line(canvas,v[20],v[21],v[22],v[23]);
+    static const char marks[15] = {'*','+','^','~','o','x','=','/','>','#','%','&','@','!','D'};
+    if (!ground_mode) bay_sprite_plot(canvas, 5, 3, marks[style_id]);
+    else bay_sprite_plot(canvas, 5, 4, marks[style_id]);
     bay_sprite_color(player, style);
     for (int row=0;row<BAY_SPRITE_H;++row) {
         printf("\033[%d;%dH",y+row,x);

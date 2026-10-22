@@ -15,8 +15,7 @@ run:
 	$(PYTHON) $(PY_GAME)
 
 # Generate a Player 1 AI run config in the current working directory.
-run-ai:
-	$(PYTHON) $(AI_PLAYER)
+run-ai: run-cpp
 
 # Check Python syntax and compile both native implementations.
 check:

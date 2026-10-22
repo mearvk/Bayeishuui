@@ -98,10 +98,18 @@ def choose_action(state: Mapping[str, Any]) -> str:
     return " " if stamina >= 13 else "g"
 
 
-def create_run_config(directory: str | os.PathLike[str] = ".") -> Path:
-    """Create a uniquely named JSON-compatible .cfg record in the run directory."""
+def create_run_config(
+    directory: str | os.PathLike[str] = ".",
+    duration_seconds: float = 0,
+    result: str = "session-ended",
+) -> Path:
+    """Create a uniquely named fight record after a caller knows elapsed duration."""
     root = Path(directory).resolve()
     root.mkdir(parents=True, exist_ok=True)
+    elapsed = max(0, int(duration_seconds))
+    hours, remainder = divmod(elapsed, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    duration_tag = f"{hours}h{minutes:02d}m{seconds:02d}s"
     date = datetime.now().astimezone().strftime("%Y%m%d")
     try:
         account = getpass.getuser()
@@ -112,7 +120,7 @@ def create_run_config(directory: str | os.PathLike[str] = ".") -> Path:
     alphabet = string.ascii_uppercase + string.digits
     for _ in range(20):
         token = "".join(secrets.choice(alphabet) for _ in range(8))
-        path = root / f"{token}_{date}_{safe_account}.cfg"
+        path = root / f"{token}_{date}_{duration_tag}_{safe_account}.cfg"
         try:
             # Exclusive creation prevents accidental overwrites even on a collision.
             with path.open("x", encoding="utf-8") as handle:
@@ -120,6 +128,9 @@ def create_run_config(directory: str | os.PathLike[str] = ".") -> Path:
                     "format": "bayeishuui-ai-config-v1",
                     "created_at": datetime.now().astimezone().isoformat(timespec="seconds"),
                     "run_date": date,
+                    "duration": duration_tag,
+                    "duration_seconds": elapsed,
+                    "result": result,
                     "account": safe_account,
                     "player": 1,
                     "controller": "bayeishuui_ai",

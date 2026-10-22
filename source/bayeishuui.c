@@ -66,7 +66,7 @@ static void render(int w,int h,double hp,double ehp,double stamina,double estami
     bar("STAMINA",stamina,12,95,235,155); bar("RIVAL",estamina,12,255,180,90); printf("\n");
     int horizon=scene/3;
     for(int y=0;y<scene;y++){
-        printf("\033[%d;1H",y+5);
+        printf("\033[%d;1H",y+6);
         if(y<horizon) { color(30+y*2,42+y*2,62+y*3); for(int x=0;x<w;x++) printf(" "); }
         else {
             for(int x=0;x<w;x++){

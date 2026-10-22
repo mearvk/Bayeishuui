@@ -28,6 +28,12 @@ The native C and C++ games feature **15 ranked opponents and 17 fights per oppon
 
 The progression runs from **Initiate** through **Copper, Bronze, Silver, Gold, Platinum, Jade, Ruby, Sapphire, Emerald, Obsidian, Master, Grandmaster, Champion**, and finally **Guild Legend**. The opponent roster is documented in [source/README.md](source/README.md).
 
+## Terminal sprite animation
+
+The player and each of the 15 Fighter Guild opponents have a consecutive **244-frame animation cycle** (indices 0–243), rendered directly as fixed-width ANSI/Unicode terminal sprites. The shared sprite engine adds fighter-specific stance silhouettes, color identity, and timing, with connected motion beats for Muay Thai strikes, footwork, recoil, ground control, ground-and-pound, and finishes. It is designed for the terminal rather than a raster or 3D renderer.
+
+See [the sprite engine](source/bayeishuui_sprites.h) and [native source notes](source/README.md).
+
 ## Fighting styles
 
 Muay Thai is the foundation of the native campaign: guard, teep, round kick, punches, knees and close-range elbows. Each of the 15 Fighter Guild opponents has an individual tactical style, displayed in the HUD and reflected in movement, pressure, timing or attack range. Use **Space** for straight/close-range strikes, **R** for a teep, and **E** for a round kick.

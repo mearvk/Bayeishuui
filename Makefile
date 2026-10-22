@@ -1,4 +1,4 @@
-.PHONY: run check clean build-c run-c build-cpp run-cpp
+.PHONY: run check clean build-c run-c build-cpp run-cpp run-ai
 
 PYTHON ?= python3
 CC ?= cc
@@ -6,6 +6,7 @@ CXX ?= c++
 CFLAGS ?= -O2 -Wall -Wextra -Wpedantic -std=c11
 CXXFLAGS ?= -O2 -Wall -Wextra -Wpedantic -std=c++17
 PY_GAME := inventory/bayeshuui.py
+AI_PLAYER := source/bayeishuui_ai.py
 C_GAME := build/bayeishuui-c
 CPP_GAME := build/bayeishuui-cpp
 
@@ -13,9 +14,13 @@ CPP_GAME := build/bayeishuui-cpp
 run:
 	$(PYTHON) $(PY_GAME)
 
+# Generate a Player 1 AI run config in the current working directory.
+run-ai:
+	$(PYTHON) $(AI_PLAYER)
+
 # Check Python syntax and compile both native implementations.
 check:
-	$(PYTHON) -m py_compile $(PY_GAME)
+	$(PYTHON) -m py_compile $(PY_GAME) $(AI_PLAYER)
 	$(MAKE) build-c
 	$(MAKE) build-cpp
 

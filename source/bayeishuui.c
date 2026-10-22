@@ -11,6 +11,7 @@
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
+#include "bayeishuui_sprites.h"
 
 static struct termios original;
 static int raw_enabled = 0, running = 1;
@@ -33,24 +34,6 @@ static void bar(const char *name, double value, int width, int r, int g, int b) 
     printf("%s ",name); color(220,225,235); printf("[");
     for(int i=0;i<width;i++){ if(i<n) color(r,g,b); else color(65,72,87); printf(i<n?"█":"·"); }
     color(220,225,235); printf("] %3d%%  ",(int)value);
-}
-static void fighter(int x,int y,int scale,int player,int guard,int strike) {
-    const char *ink=player?"\033[38;2;100;210;255m":"\033[38;2;255;105;115m";
-    int s=scale<1?1:scale;
-    printf("\033[%d;%dH%s",y,x,ink);
-    if (s>=3) {
-        printf("  O  \n\033[%d;%dH",y+1,x);
-        printf(" /|\\ \n\033[%d;%dH",y+2,x);
-        if(strike) printf("  |----> \n"); else if(guard) printf(" /|\\  \n"); else printf(" / \\  \n");
-        printf("\033[%d;%dH",y+3,x);
-        printf(" / \\");
-    } else {
-        printf(" O \n\033[%d;%dH",y+1,x);
-        printf(strike?"-|-==>":" /|\\");
-        printf("\033[%d;%dH",y+2,x);
-        printf(" / \\");
-    }
-    printf("\033[0m");
 }
 static const char *opponents[15] = {"Milo Quickstep","Jax Ironhand","Nia Swift","Bram Stone","Kira Storm","Dante Cross","Sora Blade","Viktor Voss","Mei Dragon","Orion Vale","Zara Night","Cassian Wolf","Rhea Titan","Kael Thunder","The First Fang"};
 static const char *guild_ranks[15] = {"Initiate","Copper","Bronze","Silver","Gold","Platinum","Jade","Ruby","Sapphire","Emerald","Obsidian","Master","Grandmaster","Champion","Guild Legend"};
@@ -90,7 +73,7 @@ static void render(int w,int h,double hp,double ehp,double stamina,double estami
     }
     int ey=4+horizon+1+(int)((6.0-gap)*0.8); if(ey>scene+1)ey=scene+1;
     int py=4+scene-5; if(py<ey+3)py=ey+3;
-    fighter(ex,ey,2,0,0,0); fighter(px,py,3,1,guard,strike);
+    bay_sprite_draw(ex,ey,0,rank-1,frame,0,0,ground_mode); bay_sprite_draw(px,py,1,0,frame,guard,strike,ground_mode);
     printf("\033[%d;1H",h-3); color(255,210,130); printf(" %s",message);
     color(175,190,210); printf("\033[%d;1H W advance  A/D circle  S retreat  SPACE/R/E strike  G guard  J/K/L ground  Q quit",h-1);
     printf("\033[0m"); fflush(stdout);

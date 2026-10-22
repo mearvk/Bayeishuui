@@ -12,6 +12,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "bayeishuui_sprites.h"
+#include "bayeishuui_ai.h"
 
 static struct termios original;
 static int raw_enabled = 0, running = 1;
@@ -90,11 +91,21 @@ int main(int argc,char **argv) {
     atexit(restore); signal(SIGINT,stop_signal); signal(SIGTERM,stop_signal);
     printf("\033[?25l");
     double hp=100,ehp=100,st=100,es=100,gap=3.0,last=now_s(),next_enemy=0,player_cd=0,guard_until=0,enemy_wind=0;
-    int lateral=0,frame=0,strike=0,guard=0,rank=1,fight_no=1,wins=0,losses=0,ground_mode=0,ground_control=0,ground_wins=0,ground_unlocked=0,sudden_death_used=0,total_wins=0,total_losses=0; double damage_to_enemy=0; char message[192]="Fighter Guild: 15 opponents, 17 fights each.";
+    int lateral=0,frame=0,strike=0,guard=0,rank=1,fight_no=1,wins=0,losses=0,ground_mode=0,ground_control=0,ground_wins=0,ground_unlocked=0,sudden_death_used=0,total_wins=0,total_losses=0;
+    double damage_to_enemy=0,session_start=0,ai_next_action=0; int ai_mode=1;
+    char message[192]="Double SPACE within 21 seconds for manual Player 1; otherwise Perfect Fighter.";
+    printf("\033[2J\033[H\033[?25lBAYEISHUUI — PLAYER 1 SELECT\n\nDouble-tap SPACE within 21 seconds for manual play.\nOtherwise Perfect Fighter plays Player 1.\nPress ESC to cancel.\n");fflush(stdout);
+    double choice_start=now_s(),last_space=-10.0;
+    while(running&&now_s()-choice_start<21.0){if(key_ready()){char ck=0;if(read(STDIN_FILENO,&ck,1)==1){double kt=now_s();if(ck==27){running=0;break;}if(ck==' '&&kt-last_space<=0.65){ai_mode=0;break;}if(ck==' ')last_space=kt;}}
+      printf("\033[7;1HStarting Perfect Fighter in %02d seconds...  ",21-(int)(now_s()-choice_start));fflush(stdout);struct timespec cp={0,50000000};nanosleep(&cp,NULL);}
+    if(!running){printf("\nSession cancelled.\n");return 0;}session_start=now_s();last=session_start;
+    snprintf(message,sizeof message,"%s",ai_mode?"PERFECT FIGHTER ACTIVE — live actions; ESC ends session.":"MANUAL PLAYER 1 — your controls are active.");
     while(running&&hp>0&&rank<=15){
         double t=now_s(),dt=clampd(t-last,0,.12); last=t;
         strike=0; guard=t<guard_until;
-        if(key_ready()){char k=0; if(read(STDIN_FILENO,&k,1)==1){
+        if(key_ready()||ai_mode){char k=0;int got_key=0;if(ai_mode){if(key_ready()){char uk=0;if(read(STDIN_FILENO,&uk,1)==1&&uk==27){running=0;snprintf(message,sizeof message,"ESCAPE — Perfect Fighter session ended.");}}
+ if(running&&t>=ai_next_action){k=bayeishuui_ai_action(hp,ehp,st,gap,lateral,ground_mode,ground_unlocked,ground_control,enemy_wind,t,player_cd);got_key=(k!='\0');ai_next_action=t+0.22;}}
+ else if(read(STDIN_FILENO,&k,1)==1)got_key=1;if(got_key){
             if(k=='q'||k=='Q')break;
             if(k=='w'||k=='W'){gap=clampd(gap-.22,.7,6.5);snprintf(message,sizeof message,"You step in behind your guard.");}
             if(k=='s'||k=='S'){gap=clampd(gap+.25,.7,6.5);snprintf(message,sizeof message,"You create space.");}
@@ -139,5 +150,6 @@ int main(int argc,char **argv) {
         if(hp<=0){losses++;total_losses++;if(!sudden_death_used&&total_wins>=11&&total_wins>total_losses){sudden_death_used=1;hp=25;ehp=100;snprintf(message,sizeof message,"SUDDEN DEATH! Eligible: 11+ wins and ahead.");}else{running=0;snprintf(message,sizeof message,"KNOCKOUT — Sudden Death requires 11+ wins and a winning record.");}}
     }
     printf("\033[0m\033[?25h\n%s\n",hp<=0?"Campaign over — you were defeated.":rank>15?"FIGHTER GUILD COMPLETE — all 15 opponents, 17 fights each!":"Campaign abandoned."); printf("%s\n",message);
+    bayeishuui_save_run_config(now_s()-session_start,rank>15,ai_mode,total_wins,total_losses);
     return 0;
 }

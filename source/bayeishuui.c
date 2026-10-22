@@ -54,19 +54,29 @@ static void fighter(int x,int y,int scale,int player,int guard,int strike) {
 }
 static const char *opponents[15] = {"Milo Quickstep","Jax Ironhand","Nia Swift","Bram Stone","Kira Storm","Dante Cross","Sora Blade","Viktor Voss","Mei Dragon","Orion Vale","Zara Night","Cassian Wolf","Rhea Titan","Kael Thunder","The First Fang"};
 static const char *guild_ranks[15] = {"Initiate","Copper","Bronze","Silver","Gold","Platinum","Jade","Ruby","Sapphire","Emerald","Obsidian","Master","Grandmaster","Champion","Guild Legend"};
+static const char *styles[15] = {
+"Muay Thai Fundamentals","Pressure Muay Mat","Long-Guard Muay Femur","Counter-Kicking Muay Tae","Knee-Forward Muay Khao",
+"Elbow Specialist Muay Sok","Clinch Controller","Southpaw Angle Fighter","Teep-and-Reset Tactician","High-Guard Pressure Fighter",
+"Switch-Kick Specialist","Counter-Elbow Technician","Body-Kick Attrition Fighter","Advanced Muay Femur","Complete Nak Muay"
+};
+static const char *style_notes[15] = {
+"Balanced stance; checks range before committing.","Walks forward behind a tight guard; heavy hands.","Uses long guard and feints to draw attacks.","Punishes entries with timed round kicks.","Closes distance to pressure with knees.",
+"Looks for short-range elbow counters.","Seeks clinch range and sustained knee pressure.","Circles off-line to create awkward angles.","Uses teeps to interrupt forward movement.","Blocks first, then answers with combinations.",
+"Changes stance and attacks from either side.","Baits attacks, then counters at close range.","Attacks the body and taxes your stamina.","Reads patterns, varies rhythm, and counters.","Mixes every Muay Thai tool with few predictable openings."
+};
 static void render(int w,int h,double hp,double ehp,double stamina,double estamina,double gap,int px,int ex,int guard,int strike,const char *message,int frame,int rank) {
     int scene=h-9; if(scene<9) scene=9; if(scene>23) scene=23;
     printf("\033[2J\033[H");
     bg(7,13,25); color(130,205,255);
     printf("  BAYEISHUUI  /  FIGHTER GUILD");
     color(255,205,115); printf("  RANK %02d/15: %s\n",rank,guild_ranks[rank-1]);
-    color(220,225,235); printf("  OPPONENT: %s  |  DISTANCE %.1fm\n",opponents[rank-1],gap);
-    color(255,195,100); printf("DISTANCE %.1fm\n",gap);
+    color(220,225,235); printf("  OPPONENT: %s\n  STYLE: %s\n",opponents[rank-1],styles[rank-1]);
+    color(155,190,220); printf("  TACTIC: %s\n",style_notes[rank-1]);
     bar("YOU ",hp,14,70,220,255); bar("RIVAL",ehp,14,255,90,105); printf("\n");
     bar("STAMINA",stamina,12,95,235,155); bar("RIVAL",estamina,12,255,180,90); printf("\n");
     int horizon=scene/3;
     for(int y=0;y<scene;y++){
-        printf("\033[%d;1H",y+6);
+        printf("\033[%d;1H",y+8);
         if(y<horizon) { color(30+y*2,42+y*2,62+y*3); for(int x=0;x<w;x++) printf(" "); }
         else {
             for(int x=0;x<w;x++){
@@ -108,16 +118,29 @@ int main(int argc,char **argv) {
             if(k=='a'||k=='A'){lateral=clampd(lateral-1,-3,3);snprintf(message,sizeof message,"You circle left.");}
             if(k=='d'||k=='D'){lateral=clampd(lateral+1,-3,3);snprintf(message,sizeof message,"You circle right.");}
             if(k=='g'||k=='G'){guard_until=t+.55;snprintf(message,sizeof message,"Guard up. Time the opponent.");}
-            if(k==' '&&t>=player_cd&&st>=13){st-=13;player_cd=t+.62;strike=1;
-                if(gap<=2.25&&abs(lateral)<=2){ehp=clampd(ehp-(7+(rand()%9)),0,100);snprintf(message,sizeof message,"CLEAN HIT — rival health drops.");}
-                else snprintf(message,sizeof message,"Your strike falls short. Close distance first.");
+            if((k==' '||k=='e'||k=='E'||k=='r'||k=='R')&&t>=player_cd&&st>=13){
+                double reach=(k=='r'||k=='R')?3.15:(k=='e'||k=='E')?2.7:2.25;
+                int damage=(k=='r'||k=='R')?5:(k=='e'||k=='E')?11:8;
+                const char *technique=(k=='r'||k=='R')?"TEEP":(k=='e'||k=='E')?"ROUND KICK":"STRAIGHT / ELBOW";
+                st-=(k=='e'||k=='E')?19:(k=='r'||k=='R')?10:13; player_cd=t+((k=='e'||k=='E')?.78:.62);strike=1;
+                if(gap<=reach&&abs(lateral)<=2){ehp=clampd(ehp-(damage+(rand()%5)),0,100);snprintf(message,sizeof message,"%s lands — return to Muay Thai guard.",technique);}
+                else snprintf(message,sizeof message,"%s misses. Re-establish range.",technique);
             }
         }}
         st=clampd(st+dt*(guard?3:9),0,100); es=clampd(es+dt*7,0,100);
-        if(t>=next_enemy&&gap<3.0){enemy_wind=t+.42;next_enemy=t+(1.65-rank*0.055)+(rand()%100)/100.0;}
+        if(t>=next_enemy&&gap<3.0){
+            double pace=(rank==1?1.0:(rank==2||rank==5||rank==7||rank==10?0.72:(rank==3||rank==4||rank==8||rank==9||rank==11||rank==12||rank==13||rank==14?0.9:0.78)));
+            enemy_wind=t+(rank==3||rank==4||rank==8||rank==12||rank==14?0.58:0.40);
+            next_enemy=t+(1.65-rank*0.055)*pace+(rand()%100)/100.0;
+            if(rank==2||rank==5||rank==6||rank==7) gap=clampd(gap-0.035,.7,6.5);
+            if(rank==4||rank==8||rank==11||rank==14) lateral=(lateral==0?1:-lateral);
+        }
         if(enemy_wind>0&&t>=enemy_wind){
-            if(gap<=2.1&&abs(lateral)<=2){if(guard){hp=clampd(hp-(1+rank/5),0,100);snprintf(message,sizeof message,"BLOCK! You absorb most of the impact.");}
-                else {hp=clampd(hp-(6+rank/2+(rand()%9)),0,100);snprintf(message,sizeof message,"%s connects — defend and counter.",opponents[rank-1]);}}
+            if(gap<=(rank==5||rank==6||rank==7?1.65:rank==9?2.7:2.1)&&abs(lateral)<=2){
+                int base=(rank==4||rank==11||rank==13?10:rank==5||rank==7?8:6);
+                if(guard){hp=clampd(hp-(1+rank/5),0,100);snprintf(message,sizeof message,"CHECK / BLOCK! You absorb the %s.",rank%4==0?"punches":rank%4==1?"round kick":rank%4==2?"teep":"knee / elbow");}
+                else {hp=clampd(hp-(base+rank/2+(rand()%7)),0,100);snprintf(message,sizeof message,"%s lands %s — defend and counter.",opponents[rank-1],rank%4==0?"straight punches":rank%4==1?"round kick":rank%4==2?"teep":"knee / elbow");}
+            }
             else snprintf(message,sizeof message,"The opponent's strike misses at this range.");
             enemy_wind=0;
         }

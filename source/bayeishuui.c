@@ -1,0 +1,127 @@
+#define _POSIX_C_SOURCE 200809L
+#include <errno.h>
+#include <locale.h>
+#include <math.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/select.h>
+#include <sys/ioctl.h>
+#include <termios.h>
+#include <time.h>
+#include <unistd.h>
+
+static struct termios original;
+static int raw_enabled = 0, running = 1;
+static void restore(void) {
+    if (raw_enabled) { tcsetattr(STDIN_FILENO, TCSAFLUSH, &original); raw_enabled = 0; }
+    printf("\033[0m\033[?25h\033[2J\033[H");
+    fflush(stdout);
+}
+static void stop_signal(int sig) { (void)sig; running = 0; }
+static double clampd(double x, double lo, double hi) { return x < lo ? lo : (x > hi ? hi : x); }
+static double now_s(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return t.tv_sec + t.tv_nsec / 1e9; }
+static int key_ready(void) {
+    fd_set f; struct timeval tv = {0,0}; FD_ZERO(&f); FD_SET(STDIN_FILENO,&f);
+    return select(STDIN_FILENO+1,&f,NULL,NULL,&tv) > 0;
+}
+static void color(int r,int g,int b) { printf("\033[38;2;%d;%d;%dm",r,g,b); }
+static void bg(int r,int g,int b) { printf("\033[48;2;%d;%d;%dm",r,g,b); }
+static void bar(const char *name, double value, int width, int r, int g, int b) {
+    int n=(int)round(clampd(value,0,100)*width/100.0);
+    printf("%s ",name); color(220,225,235); printf("[");
+    for(int i=0;i<width;i++){ if(i<n) color(r,g,b); else color(65,72,87); printf(i<n?"█":"·"); }
+    color(220,225,235); printf("] %3d%%  ",(int)value);
+}
+static void fighter(int x,int y,int scale,int player,int guard,int strike) {
+    const char *ink=player?"\033[38;2;100;210;255m":"\033[38;2;255;105;115m";
+    int s=scale<1?1:scale;
+    printf("\033[%d;%dH%s",y,x,ink);
+    if (s>=3) {
+        printf("  O  \n\033[%d;%dH",y+1,x);
+        printf(" /|\\ \n\033[%d;%dH",y+2,x);
+        if(strike) printf("  |----> \n"); else if(guard) printf(" /|\\  \n"); else printf(" / \\  \n");
+        printf("\033[%d;%dH",y+3,x);
+        printf(" / \\");
+    } else {
+        printf(" O \n\033[%d;%dH",y+1,x);
+        printf(strike?"-|-==>":" /|\\");
+        printf("\033[%d;%dH",y+2,x);
+        printf(" / \\");
+    }
+    printf("\033[0m");
+}
+static void render(int w,int h,double hp,double ehp,double stamina,double estamina,double gap,int px,int ex,int guard,int strike,const char *message,int frame) {
+    int scene=h-8; if(scene<10) scene=10; if(scene>24) scene=24;
+    printf("\033[2J\033[H");
+    bg(7,13,25); color(130,205,255);
+    printf("  BAYEISHUUI  /  TERMINAL FIGHT CLUB     ");
+    color(220,225,235); printf("ROUND 01   ");
+    color(255,195,100); printf("DISTANCE %.1fm\n",gap);
+    bar("YOU ",hp,14,70,220,255); bar("RIVAL",ehp,14,255,90,105); printf("\n");
+    bar("STAMINA",stamina,12,95,235,155); bar("RIVAL",estamina,12,255,180,90); printf("\n");
+    int horizon=scene/3;
+    for(int y=0;y<scene;y++){
+        printf("\033[%d;1H",y+4);
+        if(y<horizon) { color(30+y*2,42+y*2,62+y*3); for(int x=0;x<w;x++) printf(" "); }
+        else {
+            for(int x=0;x<w;x++){
+                int mid=w/2, dx=abs(x-mid), dy=y-horizon;
+                if(x==mid || (dy>0 && dx==dy*3) || (dy>1 && dx==dy*5)) color(55+dy*4,75+dy*3,100+dy*2);
+                else if((x+y+frame)%17==0) color(80,105,130);
+                else color(26+dy*2,36+dy*2,51+dy*2);
+                printf((x==mid || (dy>0 && dx==dy*3) || (dy>1 && dx==dy*5))?"╱":" ");
+            }
+        }
+    }
+    int ey=4+horizon+1+(int)((6.0-gap)*0.8); if(ey>scene+1)ey=scene+1;
+    int py=4+scene-5; if(py<ey+3)py=ey+3;
+    fighter(ex,ey,2,0,0,0); fighter(px,py,3,1,guard,strike);
+    printf("\033[%d;1H",h-3); color(255,210,130); printf(" %s",message);
+    color(175,190,210); printf("\033[%d;1H W advance  A/D circle  S retreat  SPACE strike  G guard  Q quit",h-1);
+    printf("\033[0m"); fflush(stdout);
+}
+int main(int argc,char **argv) {
+    (void)argc; (void)argv; setlocale(LC_ALL,"");
+    if(!isatty(STDIN_FILENO)||!isatty(STDOUT_FILENO)){fprintf(stderr,"Run this game in an interactive Linux terminal.\n");return 2;}
+    struct winsize ws; ioctl(STDOUT_FILENO,TIOCGWINSZ,&ws);
+    int w=ws.ws_col?ws.ws_col:80,h=ws.ws_row?ws.ws_row:30;
+    if(w<60||h<24){fprintf(stderr,"Please resize terminal to at least 60x24.\n");return 2;}
+    if(tcgetattr(STDIN_FILENO,&original)<0){perror("tcgetattr");return 2;}
+    struct termios raw=original; raw.c_lflag &= (tcflag_t) ~(ICANON|ECHO); raw.c_iflag &= (tcflag_t) ~(IXON|ICRNL); raw.c_cc[VMIN]=0; raw.c_cc[VTIME]=0;
+    if(tcsetattr(STDIN_FILENO,TCSAFLUSH,&raw)<0){perror("tcsetattr");return 2;} raw_enabled=1;
+    atexit(restore); signal(SIGINT,stop_signal); signal(SIGTERM,stop_signal);
+    printf("\033[?25l");
+    double hp=100,ehp=100,st=100,es=100,gap=3.0,last=now_s(),next_enemy=0,player_cd=0,guard_until=0,enemy_wind=0;
+    int lateral=0, frame=0, strike=0,guard=0; char message[128]="Find your range. Watch the opponent's shoulders.";
+    while(running&&hp>0&&ehp>0){
+        double t=now_s(),dt=clampd(t-last,0,.12); last=t;
+        strike=0; guard=t<guard_until;
+        if(key_ready()){char k=0; if(read(STDIN_FILENO,&k,1)==1){
+            if(k=='q'||k=='Q')break;
+            if(k=='w'||k=='W'){gap=clampd(gap-.22,.7,6.5);snprintf(message,sizeof message,"You step in behind your guard.");}
+            if(k=='s'||k=='S'){gap=clampd(gap+.25,.7,6.5);snprintf(message,sizeof message,"You create space.");}
+            if(k=='a'||k=='A'){lateral=clampd(lateral-1,-3,3);snprintf(message,sizeof message,"You circle left.");}
+            if(k=='d'||k=='D'){lateral=clampd(lateral+1,-3,3);snprintf(message,sizeof message,"You circle right.");}
+            if(k=='g'||k=='G'){guard_until=t+.55;snprintf(message,sizeof message,"Guard up. Time the opponent.");}
+            if(k==' '&&t>=player_cd&&st>=13){st-=13;player_cd=t+.62;strike=1;
+                if(gap<=2.25&&abs(lateral)<=2){ehp=clampd(ehp-(7+(rand()%9)),0,100);snprintf(message,sizeof message,"CLEAN HIT — rival health drops.");}
+                else snprintf(message,sizeof message,"Your strike falls short. Close distance first.");
+            }
+        }}
+        st=clampd(st+dt*(guard?3:9),0,100); es=clampd(es+dt*7,0,100);
+        if(t>=next_enemy&&gap<3.0){enemy_wind=t+.42;next_enemy=t+1.25+(rand()%100)/100.0;}
+        if(enemy_wind>0&&t>=enemy_wind){
+            if(gap<=2.1&&abs(lateral)<=2){if(guard){hp=clampd(hp-2,0,100);snprintf(message,sizeof message,"BLOCK! You absorb most of the impact.");}
+                else {hp=clampd(hp-(6+(rand()%9)),0,100);snprintf(message,sizeof message,"RIVAL CONNECTS — reset your guard.");}}
+            else snprintf(message,sizeof message,"The opponent's strike misses at this range.");
+            enemy_wind=0;
+        }
+        if(gap>2.0&&frame%4==0)gap=clampd(gap-.025,.7,6.5);
+        render(w,h,hp,ehp,st,es,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++);
+        struct timespec pause={0,50000000}; nanosleep(&pause,NULL);
+    }
+    printf("\033[0m\033[?25h\n%s\n",hp<=0?"Bout over — you were knocked out.":ehp<=0?"Victory — opponent defeated.":"Bout abandoned.");
+    return 0;
+}

@@ -12,6 +12,7 @@
 #include <termios.h>
 #include <thread>
 #include <unistd.h>
+#include "bayeishuui_sprites.h"
 
 namespace {
 termios original{};
@@ -31,17 +32,6 @@ void bar(const char* label,double value,int width,int r,int g,int b) {
     std::cout<<label<<" "; fg(220,225,235); std::cout<<'[';
     for(int i=0;i<width;++i) { if(i<filled)fg(r,g,b);else fg(65,72,87);std::cout<<(i<filled?"█":"·"); }
     fg(220,225,235); std::cout<<"] "<<static_cast<int>(value)<<"%  ";
-}
-void fighter(int x,int y,bool player,bool guarding,bool striking) {
-    fg(player?100:255,player?210:105,player?255:115);
-    std::cout<<"\033["<<y<<';'<<x<<"H";
-    if(player) {
-        std::cout<<"  O  \n\033["<<y+1<<';'<<x<<"H /|\\ \n\033["<<y+2<<';'<<x<<"H";
-        std::cout<<(striking?"  |---->":" /|\\  ")<<"\n\033["<<y+3<<';'<<x<<"H / \\";
-    } else {
-        std::cout<<" O \n\033["<<y+1<<';'<<x<<"H"<<(striking?"-|-==>":" /|\\")<<"\n\033["<<y+2<<';'<<x<<"H / \\";
-    }
-    std::cout<<"\033[0m";
 }
 const char* opponents[15]={"Milo Quickstep","Jax Ironhand","Nia Swift","Bram Stone","Kira Storm","Dante Cross","Sora Blade","Viktor Voss","Mei Dragon","Orion Vale","Zara Night","Cassian Wolf","Rhea Titan","Kael Thunder","The First Fang"};
 const char* guildRanks[15]={"Initiate","Copper","Bronze","Silver","Gold","Platinum","Jade","Ruby","Sapphire","Emerald","Obsidian","Master","Grandmaster","Champion","Guild Legend"};
@@ -75,7 +65,7 @@ void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStam
     }
     int ey=std::min(scene+1,4+horizon+1+static_cast<int>((6.0-gap)*.8));
     int py=std::max(4+scene-5,ey+3);
-    fighter(ex,ey,false,false,false);fighter(px,py,true,guarding,striking);
+    bay_sprite_draw(ex,ey,0,rank-1,frame,false,false,groundMode);bay_sprite_draw(px,py,1,0,frame,guarding,striking,groundMode);
     fg(255,210,130);std::cout<<"\033["<<h-3<<";1H "<<message;
     fg(175,190,210);std::cout<<"\033["<<h-1<<";1H W advance  A/D circle  S retreat  SPACE/R/E strike  G guard  J/K/L ground  Q quit";
     std::cout<<"\033[0m"<<std::flush;

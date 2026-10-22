@@ -4,7 +4,7 @@ This directory contains two standalone implementations of Bayeishuui: bayeishuui
 
 ## Fighter Guild campaign
 
-The native game has a 15-opponent campaign. The HUD shows the current Fighter Guild rank, opponent, and distance. Each opponent becomes more aggressive and hits harder as the player advances. Defeating an opponent promotes the player to the next rank, restores stamina, and grants a limited health recovery. Health otherwise carries between bouts; losing ends the campaign.
+The campaign has 15 ranked opponents and 17 bouts per opponent (255 scheduled bouts). Both fighters have visible HP bars. After 150 cumulative striking damage against the current opponent (150% of 100 starting HP), Ground Game unlocks: J builds control, K uses ground-and-pound, and L attempts a submission. Opponents rate the player from 0–100 after each series; 95+ is superior.
 
 | Rank | Opponent |
 |---|---|
@@ -58,6 +58,6 @@ make build-cpp
 make run-cpp
 ```
 
-The renderer draws a perspective dojo floor, coloured fighter silhouettes, health and stamina meters, range feedback, and combat messages. Controls: **W** advance, **S** retreat, **A/D** circle, **Space** strike, **G** guard, **Q** quit. Run in a Linux terminal at least 60 columns by 24 rows. The presentation is terminal graphics (ANSI/Unicode), not hardware-accelerated 3D.
+The renderer draws a perspective dojo floor, coloured fighter silhouettes, health and stamina meters, range feedback, and combat messages. Controls: **W** advance, **S** retreat, **A/D** circle, **Space** punch, **R** teep, **E** round kick, **G** guard, **J/K/L** ground game, **Q** quit. After each 17-bout series, the opponent classifies the player as Striker, Finisher, or Balanced Striker / Finisher. Sudden Death after a knockout requires at least 11 wins and a lead in the overall record. Run in a Linux terminal at least 60 columns by 24 rows. The presentation is terminal graphics (ANSI/Unicode), not hardware-accelerated 3D.
 
 Compiler requirements: a C11 compiler such as GCC or Clang for the C version; a C++17 compiler for the C++ version.

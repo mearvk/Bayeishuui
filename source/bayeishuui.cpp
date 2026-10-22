@@ -43,11 +43,14 @@ void fighter(int x,int y,bool player,bool guarding,bool striking) {
     }
     std::cout<<"\033[0m";
 }
-void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStamina,double gap,int px,int ex,bool guarding,bool striking,const std::string& message,int frame) {
+const char* opponents[15]={"Milo Quickstep","Jax Ironhand","Nia Swift","Bram Stone","Kira Storm","Dante Cross","Sora Blade","Viktor Voss","Mei Dragon","Orion Vale","Zara Night","Cassian Wolf","Rhea Titan","Kael Thunder","The First Fang"};
+const char* guildRanks[15]={"Initiate","Copper","Bronze","Silver","Gold","Platinum","Jade","Ruby","Sapphire","Emerald","Obsidian","Master","Grandmaster","Champion","Guild Legend"};
+void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStamina,double gap,int px,int ex,bool guarding,bool striking,const std::string& message,int frame,int rank) {
     int scene=std::clamp(h-8,10,24), horizon=scene/3;
     std::cout<<"\033[2J\033[H"; fg(130,205,255);
-    std::cout<<"  BAYEISHUUI  /  TERMINAL FIGHT CLUB     ";fg(220,225,235);
-    std::cout<<"ROUND 01   ";fg(255,195,100);std::cout<<"DISTANCE "<<static_cast<int>(gap*10)/10.0<<"m\n";
+    std::cout<<"  BAYEISHUUI  /  FIGHTER GUILD     ";fg(255,205,115);
+    std::cout<<"RANK "<<(rank<10?"0":"")<<rank<<"/15 "<<guildRanks[rank-1]<<" — "<<opponents[rank-1]<<"\n";
+    fg(220,225,235);std::cout<<"DISTANCE "<<static_cast<int>(gap*10)/10.0<<"m\n";
     bar("YOU ",hp,14,70,220,255);bar("RIVAL",enemyHp,14,255,90,105);std::cout<<'\n';
     bar("STAMINA",stamina,12,95,235,155);bar("RIVAL",enemyStamina,12,255,180,90);std::cout<<'\n';
     for(int y=0;y<scene;++y) {
@@ -77,8 +80,8 @@ int main() {
     if(tcsetattr(STDIN_FILENO,TCSAFLUSH,&raw)<0){perror("tcsetattr");return 2;}rawEnabled=true;
     std::atexit(restore);std::signal(SIGINT,stop);std::signal(SIGTERM,stop);std::cout<<"\033[?25l";
     double hp=100,enemyHp=100,stamina=100,enemyStamina=100,gap=3,last=seconds(),nextEnemy=0,playerCooldown=0,guardUntil=0,enemyWind=0;
-    int lateral=0,frame=0;bool strike=false,guard=false;std::string message="Find your range. Watch the opponent's shoulders.";
-    while(running&&hp>0&&enemyHp>0) {
+    int lateral=0,frame=0,rank=1;bool strike=false,guard=false;std::string message="Fighter Guild: defeat all 15 ranked opponents.";
+    while(running&&hp>0&&rank<=15) {
         double t=seconds(),dt=clamp(t-last,0,.12);last=t;strike=false;guard=t<guardUntil;
         if(keyReady()) { char k=0;if(::read(STDIN_FILENO,&k,1)==1) {
             if(k=='q'||k=='Q')break;
@@ -93,17 +96,22 @@ int main() {
             }
         }}
         stamina=clamp(stamina+dt*(guard?3:9),0,100);enemyStamina=clamp(enemyStamina+dt*7,0,100);
-        if(t>=nextEnemy&&gap<3.0){enemyWind=t+.42;nextEnemy=t+1.25+(std::rand()%100)/100.0;}
+        if(t>=nextEnemy&&gap<3.0){enemyWind=t+.42;nextEnemy=t+(1.65-rank*.055)+(std::rand()%100)/100.0;}
         if(enemyWind>0&&t>=enemyWind){
-            if(gap<=2.1&&std::abs(lateral)<=2){if(guard){hp=clamp(hp-2,0,100);message="BLOCK! You absorb most of the impact.";}
-                else {hp=clamp(hp-(6+std::rand()%9),0,100);message="RIVAL CONNECTS — reset your guard.";}}
+            if(gap<=2.1&&std::abs(lateral)<=2){if(guard){hp=clamp(hp-(1+rank/5),0,100);message="BLOCK! You absorb most of the impact.";}
+                else {hp=clamp(hp-(6+rank/2+std::rand()%9),0,100);message=std::string(opponents[rank-1])+" connects — defend and counter.";}}
             else message="The opponent's strike misses at this range.";
             enemyWind=0;
         }
         if(gap>2.0&&frame%4==0)gap=clamp(gap-.025,.7,6.5);
-        render(w,h,hp,enemyHp,stamina,enemyStamina,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++);
+        render(w,h,hp,enemyHp,stamina,enemyStamina,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++,rank);
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        if(enemyHp<=0){
+            if(rank==15){rank=16;break;}
+            ++rank; enemyHp=100; enemyStamina=100; stamina=100; gap=3.2; lateral=0; enemyWind=0; nextEnemy=t+1.0; playerCooldown=t+.5;
+            hp=clamp(hp+18,0,100); message="RANK PROMOTION! Next Fighter Guild opponent approaches.";
+        }
     }
-    std::cout<<"\033[0m\033[?25h\n"<<(hp<=0?"Bout over — you were knocked out.":enemyHp<=0?"Victory — opponent defeated.":"Bout abandoned.")<<'\n';
+    std::cout<<"\033[0m\033[?25h\n"<<(hp<=0?"Campaign over — you were defeated.":rank>15?"FIGHTER GUILD COMPLETE — all 15 opponents defeated!":"Campaign abandoned.")<<'\n';
     return 0;
 }

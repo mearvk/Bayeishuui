@@ -49,10 +49,8 @@ of perfect play**: the game has stochastic opponent behavior and no formal proof
 that any policy is optimal. A truly optimal controller requires a complete engine
 state/action model and repeated simulation-based evaluation.
 
-## Current integration boundary
+## Native terminal behavior
 
-This is an API-ready controller module and configuration writer. It does not yet
-inject keys into the native C/C++ game, because those executables currently own
-their terminal input loops and do not expose an external control socket or pipe.
-The engine bridge should be added explicitly rather than simulating keystrokes or
-taking over the terminal.
+The native C and C++ loops use `source/bayeishuui_ai.h` for tactical decisions. At startup, a 21-second choice window lets the user double-tap Space (two taps within 650 ms) to choose manual Player 1; otherwise Perfect Fighter takes control. Escape ends an active AI session. The terminal renders the fight and updates movement, attack, and defense messages in real time.
+
+At session end, a `.cfg` is written in the immediate working directory with filename shape `RANDOMTOKEN_YYYYMMDD_DURATION_ACCOUNT.cfg`. Duration is formatted as `HHhMMmSSs`; the record includes duration in seconds, result, mode, wins, losses, and account. Exclusive file creation prevents overwrites. The controller is a strong heuristic, not a mathematical proof of perfect play.

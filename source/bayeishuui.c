@@ -118,12 +118,15 @@ int main(int argc,char **argv) {
             if(k=='a'||k=='A'){lateral=clampd(lateral-1,-3,3);snprintf(message,sizeof message,"You circle left.");}
             if(k=='d'||k=='D'){lateral=clampd(lateral+1,-3,3);snprintf(message,sizeof message,"You circle right.");}
             if(k=='g'||k=='G'){guard_until=t+.55;snprintf(message,sizeof message,"Guard up. Time the opponent.");}
-            if((k==' '||k=='e'||k=='E'||k=='r'||k=='R')&&t>=player_cd&&st>=13){
+            if(ground_mode&&(k=='j'||k=='J')){ground_control++;snprintf(message,sizeof message,"Ground control: %d.",ground_control);}
+            else if(ground_mode&&(k=='k'||k=='K')&&t>=player_cd&&st>=10){int dmg=12+rand()%7;ehp=clampd(ehp-dmg,0,100);st-=10;player_cd=t+.7;strike=1;snprintf(message,sizeof message,"GROUND AND POUND! %d damage.",dmg);}
+            else if(ground_mode&&(k=='l'||k=='L')&&t>=player_cd&&ground_control>=2){if(rand()%100<35+ground_control*8){ehp=0;ground_wins++;snprintf(message,sizeof message,"SUBMISSION! Bout finished.");}else{ground_control=0;player_cd=t+1.0;snprintf(message,sizeof message,"Submission defended; rebuild control.");}}
+            else if(!ground_mode&&(k==' '||k=='e'||k=='E'||k=='r'||k=='R')&&t>=player_cd&&st>=13){
                 double reach=(k=='r'||k=='R')?3.15:(k=='e'||k=='E')?2.7:2.25;
                 int damage=(k=='r'||k=='R')?5:(k=='e'||k=='E')?11:8;
                 const char *technique=(k=='r'||k=='R')?"TEEP":(k=='e'||k=='E')?"ROUND KICK":"STRAIGHT / ELBOW";
                 st-=(k=='e'||k=='E')?19:(k=='r'||k=='R')?10:13; player_cd=t+((k=='e'||k=='E')?.78:.62);strike=1;
-                if(gap<=reach&&abs(lateral)<=2){ehp=clampd(ehp-(damage+(rand()%5)),0,100);snprintf(message,sizeof message,"%s lands — return to Muay Thai guard.",technique);}
+                if(gap<=reach&&abs(lateral)<=2){int dealt=damage+(rand()%5);ehp=clampd(ehp-dealt,0,100);damage_to_enemy+=dealt;snprintf(message,sizeof message,"%s lands — return to Muay Thai guard.",technique);if(!ground_unlocked&&damage_to_enemy>=150){ground_unlocked=1;ground_mode=1;ground_control=0;snprintf(message,sizeof message,"150%% STRIKING DAMAGE! GROUND GAME UNLOCKED: J control, K ground-and-pound, L submission.");}}
                 else snprintf(message,sizeof message,"%s misses. Re-establish range.",technique);
             }
         }}

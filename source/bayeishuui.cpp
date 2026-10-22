@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <iostream>
 #include <string>
 #include <sys/ioctl.h>
@@ -73,6 +74,7 @@ void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStam
 }
 }
 int main() {
+    std::srand(static_cast<unsigned>(std::time(nullptr)^static_cast<std::time_t>(getpid())));
     if(!isatty(STDIN_FILENO)||!isatty(STDOUT_FILENO)){std::cerr<<"Run this game in an interactive Linux terminal.\n";return 2;}
     winsize ws{};ioctl(STDOUT_FILENO,TIOCGWINSZ,&ws);int w=ws.ws_col?ws.ws_col:80,h=ws.ws_row?ws.ws_row:30;
     if(w<60||h<24){std::cerr<<"Please resize terminal to at least 60x24.\n";return 2;}
@@ -93,7 +95,8 @@ int main() {
         double t=seconds(),dt=clamp(t-last,0,.12);last=t;strike=false;guard=t<guardUntil;
         if(keyReady()||aiMode){char k=0;bool gotKey=false;if(aiMode){if(keyReady()){char uk=0;if(::read(STDIN_FILENO,&uk,1)==1&&uk==27){running=false;message="ESCAPE — Perfect Fighter session ended.";}}
  if(running&&t>=aiNextAction){k=bayeishuui_ai_action(hp,enemyHp,stamina,gap,lateral,groundMode,groundUnlocked,groundControl,enemyWind,t,playerCooldown);gotKey=(k!='\0');aiNextAction=t+.22;}}
- else if(::read(STDIN_FILENO,&k,1)==1)gotKey=true;if(gotKey){
+ else if(::read(STDIN_FILENO,&k,1)==1)gotKey=true;
+ if(gotKey){
             if(k=='q'||k=='Q')break;
             if(k=='w'||k=='W'){gap=clamp(gap-.22,.7,6.5);message="You step in behind your guard.";}
             if(k=='s'||k=='S'){gap=clamp(gap+.25,.7,6.5);message="You create space.";}

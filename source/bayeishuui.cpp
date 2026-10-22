@@ -54,7 +54,7 @@ void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStam
     bar("YOU ",hp,14,70,220,255);bar("RIVAL",enemyHp,14,255,90,105);std::cout<<'\n';
     bar("STAMINA",stamina,12,95,235,155);bar("RIVAL",enemyStamina,12,255,180,90);std::cout<<'\n';
     for(int y=0;y<scene;++y) {
-        std::cout<<"\033["<<y+5<<";1H";
+        std::cout<<"\033["<<y+6<<";1H";
         if(y<horizon) { fg(30+y*2,42+y*2,62+y*3);std::cout<<std::string(w,' '); }
         else for(int x=0;x<w;++x) {
             int dx=std::abs(x-w/2),dy=y-horizon;

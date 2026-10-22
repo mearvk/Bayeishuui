@@ -4,49 +4,34 @@
 
 | Input | Meaning | Expected behavior |
 | --- | --- | --- |
-| W | Advance | Move toward the opponent along the arena's forward axis |
-| A | Left | Move or circle to the player's left |
-| S | Retreat | Move away from the opponent |
-| D | Right | Move or circle to the player's right |
-| Space | Strike | Start the currently selected basic strike if the fighter can act |
+| W | Advance | Close distance toward the opponent |
+| A | Circle left | Shift laterally to the player's left |
+| S | Retreat | Increase distance from the opponent |
+| D | Circle right | Shift laterally to the player's right |
+| Space | Strike | Initiate one straight punch when the fighter can act |
+| Q | Quit | Leave the current bout |
 
-These are the five primary gameplay inputs. Menus may use mouse or standard UI navigation, but the core duel should not require extra combat buttons.
+W/A/S/D and Space are the five primary gameplay controls. Q is a utility command to exit the terminal game, not a combat action.
 
-## Coordinate and facing rules
+## Combat rules
 
-- The player has a position on the arena floor and a facing direction.
-- W/S change distance relative to the opponent; A/D provide lateral footwork.
-- The camera follows from behind the player, but camera movement must not reverse the meaning of A and D.
-- Fighters should turn toward each other smoothly, with a configurable turn rate.
-- The opponent should not snap instantly to face the player during an attack.
-
-## Space: strike
-
-A Space press initiates a strike only when the player is not already in a disallowed action phase. The initial move is a straightforward forward punch.
-
-A hit is valid only when all required conditions hold:
-1. The strike is in its active phase.
-2. The opponent is within the strike's reach.
-3. The attacker's facing direction is sufficiently aligned with the opponent.
-4. The target is not invulnerable or already hit by that same strike instance.
-
-Missed strikes still incur recovery. This creates a meaningful tradeoff between attacking and maintaining position.
-
-## Movement and attack interactions
-
-- Movement remains responsive during ordinary footwork.
-- During strike wind-up and recovery, movement may be reduced but should not feel randomly disabled.
-- The first prototype should favor predictable rules over elaborate combos.
-- Simultaneous attacks must resolve consistently using a documented update order.
-- Match reset returns health, positions, action phases, and opponent state to known starting values.
+- A fighter tracks health, stamina, facing, action state, wind-up/recovery time, and stun.
+- A strike only connects when its active impact resolves, the target is close enough, and lateral alignment is within the attack window.
+- A missed strike still incurs recovery and consumes stamina.
+- A clean hit damages and briefly stuns the target.
+- Guarding reduces incoming damage at the cost of stamina.
+- Stamina recovers faster while fighters are ready, guarding, or repositioning.
+- The opponent approaches when distant and may strike or guard when close.
+- Difficulty changes the opponent's decision interval and attack tendency, not damage outcomes after a hit is determined.
+- Arena lateral movement is bounded; forward distance is clamped to prevent overlapping fighters.
 
 ## Minimum acceptance checks
 
-- Each of W/A/S/D changes position in its intended direction.
-- Space initiates one strike, not repeated damage every frame while held.
-- A strike out of range misses.
-- A strike facing away from the opponent misses.
-- A strike cannot deal damage during wind-up or recovery.
-- A successful strike changes opponent health and produces visible feedback.
-- The opponent can approach and attack without moving through arena boundaries.
-- A fighter reaching zero health ends the round exactly once.
+- W reduces separation; S increases it.
+- A and D change lateral alignment in opposite directions.
+- Space cannot start another strike during wind-up, active, recovery, or stun.
+- Out-of-range and poorly aligned strikes miss.
+- A clean strike reduces the target's health and applies a brief stun.
+- Guarding reduces damage.
+- Zero health ends the bout once and reports victory or defeat.
+- The terminal cursor and input mode are restored when the bout ends or the user quits.

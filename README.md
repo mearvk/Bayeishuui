@@ -1,43 +1,53 @@
 # Bayeishuui — Martial Arts Combat
 
-Bayeishuui is evolving into a martial-arts striking game built around deliberate movement, spacing, timing, and readable opponent behavior. The intended presentation is an over-the-shoulder, third-person view: the player's superior fighter is seen from behind while the opponent faces them across the arena.
+Bayeishuui is a Linux-terminal martial-arts duel focused on striking, footwork, range, stamina, and reading an opponent's behavior. The terminal renderer uses perspective floor lines and stylized fighter silhouettes to suggest an over-the-shoulder view: the player's fighter is in the foreground, viewed from behind, while the opponent faces them ahead.
 
-## Repository layout
+## Run
 
-- `inventory/bayeshuui.py` — preserved, dependency-free Python terminal adventure from the project's initial prototype.
-- `MARTIAL_ARTS_DESIGN.md` — core vision, perspective, combat loop, and development phases.
-- `CONTROLS_AND_COMBAT.md` — the five-button input contract and combat rules.
-- `Makefile` — convenience commands for the legacy terminal game and basic Python syntax checks.
-
-The original terminal game is retained as a separate inventory item; it is not yet the third-person fighting implementation.
-
-## Current prototype: terminal adventure
-
-Requirements: Python 3.10+ and a Linux/POSIX-compatible interactive terminal. No third-party packages are required.
+Requirements: Python 3.10+ and an interactive Linux/POSIX terminal at least 60 columns by 25 rows. No third-party Python packages are required.
 
 ```sh
 make check
 make run
 ```
 
-Run the inventory game directly with `python3 inventory/bayeshuui.py`.
+Optional difficulty settings:
 
-## Planned fighting-game controls
+```sh
+python3 inventory/bayeshuui.py --difficulty easy
+python3 inventory/bayeshuui.py --difficulty normal
+python3 inventory/bayeshuui.py --difficulty hard
+``
+
+## Controls
 
 | Key | Action |
 | --- | --- |
 | W | Advance toward the opponent |
-| A | Move/circle left |
+| A | Circle left |
 | S | Retreat |
-| D | Move/circle right |
+| D | Circle right |
 | Space | Strike |
+| Q | Quit the bout |
 
-The target design keeps these five inputs as the primary controls. The first playable combat prototype should implement movement, facing, strike range, wind-up/recovery, health, and a basic opponent AI before expanding the move set.
+## Combat
 
-## Development status
+- Strike range and lateral alignment affect whether a punch connects.
+- Strikes have wind-up, active impact, and recovery phases.
+- Clean hits reduce health and briefly stun the target.
+- Guarding reduces damage; stamina regenerates more quickly when resting.
+- The opponent approaches, attacks, guards, and recovers based on difficulty.
 
-The martial-arts direction and control contract are documented; a real-time graphical renderer, third-person camera, animated fighters, and fighting-game loop still need implementation. See the design documents before choosing a graphics engine.
+## Repository layout
+
+- `inventory/bayeshuui.py` — playable Python terminal fighting game.
+- `inventory/README.md` — inventory game notes.
+- `MARTIAL_ARTS_DESIGN.md` — design direction and future phases.
+- `CONTROLS_AND_COMBAT.md` — input and combat contract.
+- `Makefile` — `make run` and `make check`.
+
+The terminal game is intentionally a stylized approximation, not a true 3D renderer or a biomechanically validated fighting simulator. It is the playable first step toward the over-the-shoulder perspective.
 
 ## License
 
-This project is distributed under the Eclipse Public License 2.0; see [LICENSE](LICENSE).
+Eclipse Public License 2.0; see [LICENSE](LICENSE).

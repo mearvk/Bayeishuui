@@ -119,7 +119,7 @@ int main(int argc,char **argv) {
             if(k=='d'||k=='D'){lateral=clampd(lateral+1,-3,3);snprintf(message,sizeof message,"You circle right.");}
             if(k=='g'||k=='G'){guard_until=t+.55;snprintf(message,sizeof message,"Guard up. Time the opponent.");}
             if(ground_mode&&(k=='j'||k=='J')){ground_control++;snprintf(message,sizeof message,"Ground control: %d.",ground_control);}
-            else if(ground_mode&&(k=='k'||k=='K')&&t>=player_cd&&st>=10){int dmg=12+rand()%7;ehp=clampd(ehp-dmg,0,100);st-=10;player_cd=t+.7;strike=1;snprintf(message,sizeof message,"GROUND AND POUND! %d damage.",dmg);}
+            else if(ground_mode&&(k=='k'||k=='K')&&t>=player_cd&&st>=10){int dmg=12+rand()%7;ehp=clampd(ehp-dmg,0,100);if(ehp<=0)ground_wins++;st-=10;player_cd=t+.7;strike=1;snprintf(message,sizeof message,"GROUND AND POUND! %d damage.",dmg);}
             else if(ground_mode&&(k=='l'||k=='L')&&t>=player_cd&&ground_control>=2){if(rand()%100<35+ground_control*8){ehp=0;ground_wins++;snprintf(message,sizeof message,"SUBMISSION! Bout finished.");}else{ground_control=0;player_cd=t+1.0;snprintf(message,sizeof message,"Submission defended; rebuild control.");}}
             else if(!ground_mode&&(k==' '||k=='e'||k=='E'||k=='r'||k=='R')&&t>=player_cd&&st>=13){
                 double reach=(k=='r'||k=='R')?3.15:(k=='e'||k=='E')?2.7:2.25;
@@ -151,7 +151,7 @@ int main(int argc,char **argv) {
         render(w,h,hp,ehp,st,es,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++,rank,fight_no,wins,losses,ground_mode);
         struct timespec pause={0,50000000}; nanosleep(&pause,NULL);
         if(ehp<=0){wins++;total_wins++;fight_no++;ground_mode=ground_unlocked;ground_control=0;ehp=100;es=100;st=100;gap=3.2;lateral=0;enemy_wind=0;next_enemy=t+1.0;player_cd=t+.5;hp=100;
-            if(fight_no>17){int rating=(int)round(wins/17.0*100.0);const char *kind=ground_wins>wins/2?"FINISHER":(ground_wins==0?"STRIKER":"BALANCED STRIKER / FINISHER");snprintf(message,sizeof message,"%s rates you %d/100 — %s.",opponents[rank-1],rating,kind);if(rank==15){rank=16;break;}rank++;fight_no=1;wins=0;damage_to_enemy=0;ground_unlocked=0;ground_wins=0;}else snprintf(message,sizeof message,"BOUT WON — fight %d/17, wins %d, losses %d.",fight_no,wins,losses);
+            if(fight_no>17){int rating=80+ground_wins*5;if(rating>100)rating=100;const char *kind=ground_wins>=3?"FINISHER":(ground_wins==0?"STRIKER":"BALANCED STRIKER / FINISHER");snprintf(message,sizeof message,"%s rates you %d/100 — %s.",opponents[rank-1],rating,kind);if(rank==15){rank=16;break;}rank++;fight_no=1;wins=0;damage_to_enemy=0;ground_unlocked=0;ground_wins=0;}else snprintf(message,sizeof message,"BOUT WON — fight %d/17, wins %d, losses %d.",fight_no,wins,losses);
         }
         if(hp<=0){losses++;total_losses++;if(!sudden_death_used&&total_wins>=11&&total_wins>total_losses){sudden_death_used=1;hp=25;ehp=100;snprintf(message,sizeof message,"SUDDEN DEATH! Eligible: 11+ wins and ahead.");}else{running=0;snprintf(message,sizeof message,"KNOCKOUT — Sudden Death requires 11+ wins and a winning record.");}}
     }

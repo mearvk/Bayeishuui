@@ -4,20 +4,18 @@ The Player 1 tactical controller is `source/bayeishuui_ai.py`. It exposes a smal
 engine-neutral interface so the C, C++, or Python game can connect without making
 the AI depend on terminal rendering.
 
-## Run the adapter
+## Launch the native Perfect Fighter
 
 From the repository root:
 
 ```sh
-python3 source/bayeishuui_ai.py
+make run-ai
+# or make run-cpp
 ```
 
-The command creates a uniquely named `.cfg` file in the **current working
-directory**. The filename follows `RANDOMTOKEN_YYYYMMDD_ACCOUNT.cfg`, for example
-`A1B2C3D4_20261022_player.cfg`. The random token and exclusive file creation
-avoid overwriting an existing run. The account is the operating-system account
-reported by Python; it is sanitized for a portable filename. The file records
-the local timestamp, Player 1 identity, action vocabulary, and state fields.
+The native game opens a 21-second startup choice. Double-tap Space within 650 ms to play manually; otherwise Perfect Fighter controls Player 1. Escape ends an active AI session. At session end, a unique .cfg is written in the current working directory as RANDOMTOKEN_YYYYMMDD_DURATION_ACCOUNT.cfg; duration is formatted as HHhMMmSSs. The record includes result, control mode, wins, losses, and account. Existing files are never overwritten.
+
+source/bayeishuui_ai.py remains the optional engine-neutral API module; running it directly prints usage guidance rather than launching a fight.
 
 ## Engine bridge
 

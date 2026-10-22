@@ -44,7 +44,7 @@ const char* styleNotes[15]={
 "Balanced stance; checks range before committing.","Walks forward behind a tight guard; heavy hands.","Uses long guard and feints to draw attacks.","Punishes entries with timed round kicks.","Closes distance to pressure with knees.",
 "Looks for short-range elbow counters.","Seeks clinch range and sustained knee pressure.","Circles off-line to create awkward angles.","Uses teeps to interrupt forward movement.","Blocks first, then answers with combinations.",
 "Changes stance and attacks from either side.","Baits attacks, then counters at close range.","Attacks the body and taxes your stamina.","Reads patterns, varies rhythm, and counters.","Mixes every Muay Thai tool with few predictable openings."};
-void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStamina,double gap,int px,int ex,bool guarding,bool striking,const std::string& message,int frame,int rank,int fightNo,int wins,int losses,bool groundMode) {
+void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStamina,double gap,int px,int ex,bool guarding,bool striking,const std::string& message,int frame,int rank,int fightNo,int wins,int losses,bool groundMode,bool aiMode) {
     int scene=std::clamp(h-9,9,23), horizon=scene/3;
     std::cout<<"\033[2J\033[H"; fg(130,205,255);
     std::cout<<"  BAYEISHUUI  /  FIGHTER GUILD";fg(255,205,115);
@@ -67,7 +67,7 @@ void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStam
     int ey=std::min(scene+1,4+horizon+1+static_cast<int>((6.0-gap)*.8));
     int py=std::max(4+scene-5,ey+3);
     bay_sprite_draw(ex,ey,0,rank-1,frame,false,false,groundMode);bay_sprite_draw(px,py,1,0,frame,guarding,striking,groundMode);
-    fg(255,210,130);std::cout<<"\033["<<h-3<<";1H "<<message;
+    fg(255,210,130);std::cout<<"\033["<<h-3<<";1H "<<(aiMode?"PERFECT FIGHTER: ":"")<<message;
     fg(175,190,210);std::cout<<"\033["<<h-1<<";1H W advance  A/D circle  S retreat  SPACE/R/E strike  G guard  J/K/L ground  Q quit";
     std::cout<<"\033[0m"<<std::flush;
 }
@@ -130,7 +130,7 @@ int main() {
             enemyWind=0;
         }
         if(gap>2.0&&frame%4==0)gap=clamp(gap-.025,.7,6.5);
-        render(w,h,hp,enemyHp,stamina,enemyStamina,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++,rank,fightNo,wins,losses,groundMode);
+        render(w,h,hp,enemyHp,stamina,enemyStamina,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++,rank,fightNo,wins,losses,groundMode,aiMode);
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         if(enemyHp<=0){++wins;++totalWins;++fightNo;groundMode=groundUnlocked;groundControl=0;enemyHp=100;enemyStamina=100;stamina=100;gap=3.2;lateral=0;enemyWind=0;nextEnemy=t+1.0;playerCooldown=t+.5;hp=100;
             if(fightNo>17){int rating=80+groundWins*5;if(rating>100)rating=100;const char* kind=groundWins>=3?"FINISHER":(groundWins==0?"STRIKER":"BALANCED STRIKER / FINISHER");message=std::string(opponents[rank-1])+" rates you "+std::to_string(rating)+"/100 — "+kind+".";if(rank==15){rank=16;break;}++rank;fightNo=1;wins=0;damageToEnemy=0;groundUnlocked=false;groundWins=0;}else message="BOUT WON — fight "+std::to_string(fightNo)+"/17, wins "+std::to_string(wins)+", losses "+std::to_string(losses)+".";

@@ -28,6 +28,12 @@ The native C and C++ games feature **15 ranked opponents**. Rank increases after
 
 The progression runs from **Initiate** through **Copper, Bronze, Silver, Gold, Platinum, Jade, Ruby, Sapphire, Emerald, Obsidian, Master, Grandmaster, Champion**, and finally **Guild Legend**. The opponent roster is documented in [source/README.md](source/README.md).
 
+## Fighting styles
+
+Muay Thai is the foundation of the native campaign: guard, teep, round kick, punches, knees and close-range elbows. Each of the 15 Fighter Guild opponents has an individual tactical style, displayed in the HUD and reflected in movement, pressure, timing or attack range. Use **Space** for straight/close-range strikes, **R** for a teep, and **E** for a round kick.
+
+See the complete roster in [source/README.md](source/README.md).
+
 ## Native controls
 
 | Key | Action |

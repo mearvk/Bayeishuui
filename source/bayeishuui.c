@@ -73,7 +73,7 @@ static void render(int w,int h,double hp,double ehp,double stamina,double estami
     color(220,225,235); printf("  OPPONENT: %s | FIGHT %02d/17 | RECORD %d-%d\n  STYLE: %s\n",opponents[rank-1],fight_no,wins,losses,styles[rank-1]);
     color(155,190,220); printf("  TACTIC: %s\n",style_notes[rank-1]);
     bar("YOU ",hp,14,70,220,255); bar("RIVAL",ehp,14,255,90,105); printf("\n");
-    bar("STAMINA",stamina,12,95,235,155); bar("RIVAL",estamina,12,255,180,90); printf("\n");
+    bar("STAMINA",stamina,12,95,235,155); bar("RIVAL",estamina,12,255,180,90); printf("\n"); if(ground_mode){color(255,190,90);printf("  GROUND GAME: J control | K ground-and-pound | L submission\n");}else{color(155,190,220);printf("  STRIKING: Space punch | R teep | E round kick | G guard\n");}
     int horizon=scene/3;
     for(int y=0;y<scene;y++){
         printf("\033[%d;1H",y+8);
@@ -92,7 +92,7 @@ static void render(int w,int h,double hp,double ehp,double stamina,double estami
     int py=4+scene-5; if(py<ey+3)py=ey+3;
     fighter(ex,ey,2,0,0,0); fighter(px,py,3,1,guard,strike);
     printf("\033[%d;1H",h-3); color(255,210,130); printf(" %s",message);
-    color(175,190,210); printf("\033[%d;1H W advance  A/D circle  S retreat  SPACE strike  G guard  Q quit",h-1);
+    color(175,190,210); printf("\033[%d;1H W advance  A/D circle  S retreat  SPACE/R/E strike  G guard  J/K/L ground  Q quit",h-1);
     printf("\033[0m"); fflush(stdout);
 }
 int main(int argc,char **argv) {

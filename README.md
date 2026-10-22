@@ -24,7 +24,7 @@ Requirements for the native games: GCC or Clang, a Linux/POSIX terminal supporti
 
 ## Fighter Guild campaign
 
-The native C and C++ games feature **15 ranked opponents**. Rank increases after every victory, and later opponents attack faster and deal more damage. Health carries between bouts with a limited recovery after each win; stamina is restored for the next bout. Defeat all 15 to complete the Fighter Guild campaign.
+The native C and C++ games feature **15 ranked opponents and 17 fights per opponent** (255 scheduled bouts). Both fighters have HP bars. Ground Game unlocks after 150 cumulative striking damage (150% of starting 100 HP), with control, ground-and-pound, and submission interactions. Opponents rate you 0–100 after each 17-fight series; 95+ is superior. Sudden Death after a knockout requires at least 11 wins and a lead in the overall record.
 
 The progression runs from **Initiate** through **Copper, Bronze, Silver, Gold, Platinum, Jade, Ruby, Sapphire, Emerald, Obsidian, Master, Grandmaster, Champion**, and finally **Guild Legend**. The opponent roster is documented in [source/README.md](source/README.md).
 
@@ -43,6 +43,9 @@ See the complete roster in [source/README.md](source/README.md).
 | S | Retreat |
 | Space | Strike |
 | G | Guard |
+| J | Build ground control |
+| K | Ground-and-pound |
+| L | Attempt submission after building control |
 | Q | Quit the bout |
 
 ## Python version

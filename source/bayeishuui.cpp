@@ -90,7 +90,7 @@ int main() {
     if(tcsetattr(STDIN_FILENO,TCSAFLUSH,&raw)<0){perror("tcsetattr");return 2;}rawEnabled=true;
     std::atexit(restore);std::signal(SIGINT,stop);std::signal(SIGTERM,stop);std::cout<<"\033[?25l";
     double hp=100,enemyHp=100,stamina=100,enemyStamina=100,gap=3,last=seconds(),nextEnemy=0,playerCooldown=0,guardUntil=0,enemyWind=0;
-    int lateral=0,frame=0,rank=1,fightNo=1,wins=0,losses=0,groundControl=0,groundWins=0;bool strike=false,guard=false,groundMode=false,groundUnlocked=false,suddenDeathUsed=false;double damageToEnemy=0;std::string message="Fighter Guild: 15 opponents, 17 fights each.";
+    int lateral=0,frame=0,rank=1,fightNo=1,wins=0,losses=0,groundControl=0,groundWins=0;bool strike=false,guard=false,groundMode=false,groundUnlocked=false,suddenDeathUsed=false;int totalWins=0,totalLosses=0;double damageToEnemy=0;std::string message="Fighter Guild: 15 opponents, 17 fights each.";
     while(running&&hp>0&&rank<=15) {
         double t=seconds(),dt=clamp(t-last,0,.12);last=t;strike=false;guard=t<guardUntil;
         if(keyReady()) { char k=0;if(::read(STDIN_FILENO,&k,1)==1) {
@@ -132,10 +132,10 @@ int main() {
         if(gap>2.0&&frame%4==0)gap=clamp(gap-.025,.7,6.5);
         render(w,h,hp,enemyHp,stamina,enemyStamina,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++,rank,fightNo,wins,losses,groundMode);
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        if(enemyHp<=0){++wins;++fightNo;groundMode=groundUnlocked;groundControl=0;enemyHp=100;enemyStamina=100;stamina=100;gap=3.2;lateral=0;enemyWind=0;nextEnemy=t+1.0;playerCooldown=t+.5;hp=100;
+        if(enemyHp<=0){++wins;++totalWins;++fightNo;groundMode=groundUnlocked;groundControl=0;enemyHp=100;enemyStamina=100;stamina=100;gap=3.2;lateral=0;enemyWind=0;nextEnemy=t+1.0;playerCooldown=t+.5;hp=100;
             if(fightNo>17){int rating=static_cast<int>(std::round(wins/17.0*100.0));const char* kind=groundWins>wins/2?"FINISHER":(groundWins==0?"STRIKER":"BALANCED STRIKER / FINISHER");message=std::string(opponents[rank-1])+" rates you "+std::to_string(rating)+"/100 — "+kind+".";if(rank==15){rank=16;break;}++rank;fightNo=1;wins=0;damageToEnemy=0;groundUnlocked=false;groundWins=0;}else message="BOUT WON — fight "+std::to_string(fightNo)+"/17, wins "+std::to_string(wins)+", losses "+std::to_string(losses)+".";
         }
-        if(hp<=0){++losses;if(!suddenDeathUsed&&wins>=11&&wins>losses){suddenDeathUsed=true;hp=25;enemyHp=100;message="SUDDEN DEATH! Eligible: 11+ wins and ahead.";}else{running=false;message="KNOCKOUT — Sudden Death requires 11+ wins and a winning record.";}}
+        if(hp<=0){++losses;++totalLosses;if(!suddenDeathUsed&&totalWins>=11&&totalWins>totalLosses){suddenDeathUsed=true;hp=25;enemyHp=100;message="SUDDEN DEATH! Eligible: 11+ wins and ahead.";}else{running=false;message="KNOCKOUT — Sudden Death requires 11+ wins and a winning record.";}}
     }
     std::cout<<"\033[0m\033[?25h\n"<<(hp<=0?"Campaign over — you were defeated.":rank>15?"FIGHTER GUILD COMPLETE — all 15 opponents defeated!":"Campaign abandoned.")<<'\n';
     return 0;

@@ -72,7 +72,7 @@ static void render(int w,int h,double hp,double ehp,double stamina,double estami
     color(255,205,115); printf("  RANK %02d/15: %s\n",rank,guild_ranks[rank-1]);
     color(220,225,235); printf("  OPPONENT: %s | FIGHT %02d/17 | RECORD %d-%d\n  STYLE: %s\n",opponents[rank-1],fight_no,wins,losses,styles[rank-1]);
     color(155,190,220); printf("  TACTIC: %s\n",style_notes[rank-1]);
-    bar("YOU ",hp,14,70,220,255); bar("RIVAL",ehp,14,255,90,105); printf("\n");
+    bar("YOU HP",hp,14,70,220,255); bar("RIVAL HP",ehp,14,255,90,105); printf("\n");
     bar("STAMINA",stamina,12,95,235,155); bar("RIVAL",estamina,12,255,180,90); printf("\n"); if(ground_mode){color(255,190,90);printf("  GROUND GAME: J control | K ground-and-pound | L submission\n");}else{color(155,190,220);printf("  STRIKING: Space punch | R teep | E round kick | G guard\n");}
     int horizon=scene/3;
     for(int y=0;y<scene;y++){
@@ -107,7 +107,7 @@ int main(int argc,char **argv) {
     atexit(restore); signal(SIGINT,stop_signal); signal(SIGTERM,stop_signal);
     printf("\033[?25l");
     double hp=100,ehp=100,st=100,es=100,gap=3.0,last=now_s(),next_enemy=0,player_cd=0,guard_until=0,enemy_wind=0;
-    int lateral=0, frame=0, strike=0,guard=0,rank=1; char message[128]="Fighter Guild: defeat all 15 ranked opponents.";
+    int lateral=0,frame=0,strike=0,guard=0,rank=1,fight_no=1,wins=0,losses=0,ground_mode=0,ground_control=0,ground_wins=0,ground_unlocked=0,sudden_death_used=0,total_wins=0,total_losses=0; double damage_to_enemy=0; char message[192]="Fighter Guild: 15 opponents, 17 fights each.";
     while(running&&hp>0&&rank<=15){
         double t=now_s(),dt=clampd(t-last,0,.12); last=t;
         strike=0; guard=t<guard_until;

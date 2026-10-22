@@ -53,15 +53,15 @@ const char* styleNotes[15]={
 "Balanced stance; checks range before committing.","Walks forward behind a tight guard; heavy hands.","Uses long guard and feints to draw attacks.","Punishes entries with timed round kicks.","Closes distance to pressure with knees.",
 "Looks for short-range elbow counters.","Seeks clinch range and sustained knee pressure.","Circles off-line to create awkward angles.","Uses teeps to interrupt forward movement.","Blocks first, then answers with combinations.",
 "Changes stance and attacks from either side.","Baits attacks, then counters at close range.","Attacks the body and taxes your stamina.","Reads patterns, varies rhythm, and counters.","Mixes every Muay Thai tool with few predictable openings."};
-void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStamina,double gap,int px,int ex,bool guarding,bool striking,const std::string& message,int frame,int rank) {
+void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStamina,double gap,int px,int ex,bool guarding,bool striking,const std::string& message,int frame,int rank,int fightNo,int wins,int losses,bool groundMode) {
     int scene=std::clamp(h-9,9,23), horizon=scene/3;
     std::cout<<"\033[2J\033[H"; fg(130,205,255);
     std::cout<<"  BAYEISHUUI  /  FIGHTER GUILD";fg(255,205,115);
     std::cout<<"  RANK "<<(rank<10?"0":"")<<rank<<"/15: "<<guildRanks[rank-1]<<"\n";
-    fg(220,225,235);std::cout<<"  OPPONENT: "<<opponents[rank-1]<<" | DISTANCE "<<static_cast<int>(gap*10)/10.0<<"m\n";
+    fg(220,225,235);std::cout<<"  OPPONENT: "<<opponents[rank-1]<<" | DISTANCE "<<static_cast<int>(gap*10)/10.0<<"m | FIGHT "<<fightNo<<"/17 | RECORD "<<wins<<"-"<<losses<<"\n";
     fg(255,155,120);std::cout<<"  STYLE: "<<styles[rank-1]<<"\n";
     fg(155,190,220);std::cout<<"  TACTIC: "<<styleNotes[rank-1]<<"\n";
-    bar("YOU ",hp,14,70,220,255);bar("RIVAL",enemyHp,14,255,90,105);std::cout<<'\n';
+    bar("YOU HP",hp,14,70,220,255);bar("RIVAL HP",enemyHp,14,255,90,105);std::cout<<'\n';if(groundMode){fg(255,190,90);std::cout<<"  GROUND GAME: J control | K ground-and-pound | L submission\n";}else{fg(155,190,220);std::cout<<"  STRIKING: Space punch | R teep | E round kick | G guard\n";}
     bar("STAMINA",stamina,12,95,235,155);bar("RIVAL",enemyStamina,12,255,180,90);std::cout<<'\n';
     for(int y=0;y<scene;++y) {
         std::cout<<"\033["<<y+8<<";1H";
@@ -90,7 +90,7 @@ int main() {
     if(tcsetattr(STDIN_FILENO,TCSAFLUSH,&raw)<0){perror("tcsetattr");return 2;}rawEnabled=true;
     std::atexit(restore);std::signal(SIGINT,stop);std::signal(SIGTERM,stop);std::cout<<"\033[?25l";
     double hp=100,enemyHp=100,stamina=100,enemyStamina=100,gap=3,last=seconds(),nextEnemy=0,playerCooldown=0,guardUntil=0,enemyWind=0;
-    int lateral=0,frame=0,rank=1;bool strike=false,guard=false;std::string message="Fighter Guild: defeat all 15 ranked opponents.";
+    int lateral=0,frame=0,rank=1,fightNo=1,wins=0,losses=0,groundControl=0,groundWins=0;bool strike=false,guard=false,groundMode=false,groundUnlocked=false,suddenDeathUsed=false;double damageToEnemy=0;std::string message="Fighter Guild: 15 opponents, 17 fights each.";
     while(running&&hp>0&&rank<=15) {
         double t=seconds(),dt=clamp(t-last,0,.12);last=t;strike=false;guard=t<guardUntil;
         if(keyReady()) { char k=0;if(::read(STDIN_FILENO,&k,1)==1) {
@@ -100,12 +100,15 @@ int main() {
             if(k=='a'||k=='A'){lateral=static_cast<int>(clamp(lateral-1,-3,3));message="You circle left.";}
             if(k=='d'||k=='D'){lateral=static_cast<int>(clamp(lateral+1,-3,3));message="You circle right.";}
             if(k=='g'||k=='G'){guardUntil=t+.55;message="Guard up. Time the opponent.";}
-            if((k==' '||k=='e'||k=='E'||k=='r'||k=='R')&&t>=playerCooldown&&stamina>=13){
+            if(groundMode&&(k=='j'||k=='J')){++groundControl;message="Ground control: "+std::to_string(groundControl)+".";}
+            else if(groundMode&&(k=='k'||k=='K')&&t>=playerCooldown&&stamina>=10){int dmg=12+std::rand()%7;enemyHp=clamp(enemyHp-dmg,0,100);stamina-=10;playerCooldown=t+.7;strike=true;message="GROUND AND POUND! "+std::to_string(dmg)+" damage.";}
+            else if(groundMode&&(k=='l'||k=='L')&&t>=playerCooldown&&groundControl>=2){if(std::rand()%100<35+groundControl*8){enemyHp=0;++groundWins;message="SUBMISSION! Bout finished.";}else{groundControl=0;playerCooldown=t+1.0;message="Submission defended; rebuild control.";}}
+            else if(!groundMode&&(k==' '||k=='e'||k=='E'||k=='r'||k=='R')&&t>=playerCooldown&&stamina>=13){
                 double reach=(k=='r'||k=='R')?3.15:(k=='e'||k=='E')?2.7:2.25;
                 int damage=(k=='r'||k=='R')?5:(k=='e'||k=='E')?11:8;
                 const char* technique=(k=='r'||k=='R')?"TEEP":(k=='e'||k=='E')?"ROUND KICK":"STRAIGHT / ELBOW";
                 stamina-=(k=='e'||k=='E')?19:(k=='r'||k=='R')?10:13;playerCooldown=t+((k=='e'||k=='E')?.78:.62);strike=true;
-                if(gap<=reach&&std::abs(lateral)<=2){enemyHp=clamp(enemyHp-(damage+std::rand()%5),0,100);message=std::string(technique)+" lands — return to Muay Thai guard.";}
+                if(gap<=reach&&std::abs(lateral)<=2){int dealt=damage+std::rand()%5;enemyHp=clamp(enemyHp-dealt,0,100);damageToEnemy+=dealt;message=std::string(technique)+" lands — return to Muay Thai guard.";if(!groundUnlocked&&damageToEnemy>=150){groundUnlocked=true;groundMode=true;groundControl=0;message="150% STRIKING DAMAGE! GROUND GAME UNLOCKED: J control, K ground-and-pound, L submission.";}}
                 else message=std::string(technique)+" misses. Re-establish range.";
             }
         }}

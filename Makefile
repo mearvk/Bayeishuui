@@ -1,15 +1,39 @@
-.PHONY: run check clean
+.PHONY: run check clean build-c run-c build-cpp run-cpp
 
 PYTHON ?= python3
-GAME := inventory/bayeshuui.py
+CC ?= cc
+CXX ?= c++
+CFLAGS ?= -O2 -Wall -Wextra -Wpedantic -std=c11
+CXXFLAGS ?= -O2 -Wall -Wextra -Wpedantic -std=c++17
+PY_GAME := inventory/bayeshuui.py
+C_GAME := build/bayeishuui-c
+CPP_GAME := build/bayeishuui-cpp
 
-# Run the preserved terminal-adventure prototype.
+# Preserve the Python prototype.
 run:
-	$(PYTHON) $(GAME)
+	$(PYTHON) $(PY_GAME)
 
-# Validate Python syntax without launching the interactive game.
+# Check Python syntax and compile both native implementations.
 check:
-	$(PYTHON) -m py_compile $(GAME)
+	$(PYTHON) -m py_compile $(PY_GAME)
+	$(MAKE) build-c
+	$(MAKE) build-cpp
+
+build:
+	mkdir -p build
+
+build-c: build
+	$(CC) $(CFLAGS) source/bayeishuui.c -o $(C_GAME) -lm
+
+build-cpp: build
+	$(CXX) $(CXXFLAGS) source/bayeishuui.cpp -o $(CPP_GAME)
+
+run-c: build-c
+	./$(C_GAME)
+
+run-cpp: build-cpp
+	./$(CPP_GAME)
 
 clean:
+	rm -rf build
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +

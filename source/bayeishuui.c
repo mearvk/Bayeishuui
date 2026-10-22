@@ -64,13 +64,13 @@ static const char *style_notes[15] = {
 "Looks for short-range elbow counters.","Seeks clinch range and sustained knee pressure.","Circles off-line to create awkward angles.","Uses teeps to interrupt forward movement.","Blocks first, then answers with combinations.",
 "Changes stance and attacks from either side.","Baits attacks, then counters at close range.","Attacks the body and taxes your stamina.","Reads patterns, varies rhythm, and counters.","Mixes every Muay Thai tool with few predictable openings."
 };
-static void render(int w,int h,double hp,double ehp,double stamina,double estamina,double gap,int px,int ex,int guard,int strike,const char *message,int frame,int rank) {
+static void render(int w,int h,double hp,double ehp,double stamina,double estamina,double gap,int px,int ex,int guard,int strike,const char *message,int frame,int rank,int fight_no,int wins,int losses,int ground_mode) {
     int scene=h-9; if(scene<9) scene=9; if(scene>23) scene=23;
     printf("\033[2J\033[H");
     bg(7,13,25); color(130,205,255);
     printf("  BAYEISHUUI  /  FIGHTER GUILD");
     color(255,205,115); printf("  RANK %02d/15: %s\n",rank,guild_ranks[rank-1]);
-    color(220,225,235); printf("  OPPONENT: %s\n  STYLE: %s\n",opponents[rank-1],styles[rank-1]);
+    color(220,225,235); printf("  OPPONENT: %s | FIGHT %02d/17 | RECORD %d-%d\n  STYLE: %s\n",opponents[rank-1],fight_no,wins,losses,styles[rank-1]);
     color(155,190,220); printf("  TACTIC: %s\n",style_notes[rank-1]);
     bar("YOU ",hp,14,70,220,255); bar("RIVAL",ehp,14,255,90,105); printf("\n");
     bar("STAMINA",stamina,12,95,235,155); bar("RIVAL",estamina,12,255,180,90); printf("\n");
@@ -148,14 +148,12 @@ int main(int argc,char **argv) {
             enemy_wind=0;
         }
         if(gap>2.0&&frame%4==0)gap=clampd(gap-.025,.7,6.5);
-        render(w,h,hp,ehp,st,es,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++,rank);
+        render(w,h,hp,ehp,st,es,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++,rank,fight_no,wins,losses,ground_mode);
         struct timespec pause={0,50000000}; nanosleep(&pause,NULL);
-        if(ehp<=0){
-            if(rank==15){rank=16;break;}
-            rank++; ehp=100; es=100; st=100; gap=3.2; lateral=0; enemy_wind=0; next_enemy=t+1.0; player_cd=t+0.5;
-            hp=clampd(hp+18,0,100);
-            snprintf(message,sizeof message,"RANK PROMOTION! Next Fighter Guild opponent approaches.");
+        if(ehp<=0){wins++;fight_no++;ground_mode=ground_unlocked;ground_control=0;ehp=100;es=100;st=100;gap=3.2;lateral=0;enemy_wind=0;next_enemy=t+1.0;player_cd=t+.5;hp=100;
+            if(fight_no>17){int rating=(int)round(wins/17.0*100.0);const char *kind=ground_wins>wins/2?"FINISHER":(ground_wins==0?"STRIKER":"BALANCED STRIKER / FINISHER");snprintf(message,sizeof message,"%s rates you %d/100 — %s.",opponents[rank-1],rating,kind);if(rank==15){rank=16;break;}rank++;fight_no=1;wins=0;damage_to_enemy=0;ground_unlocked=0;ground_wins=0;}else snprintf(message,sizeof message,"BOUT WON — fight %d/17, wins %d, losses %d.",fight_no,wins,losses);
         }
+        if(hp<=0){losses++;if(!sudden_death_used&&wins>=11&&wins>losses){sudden_death_used=1;hp=25;ehp=100;snprintf(message,sizeof message,"SUDDEN DEATH! Eligible: 11+ wins and ahead.");}else{running=0;snprintf(message,sizeof message,"KNOCKOUT — Sudden Death requires 11+ wins and a winning record.");}}
     }
     printf("\033[0m\033[?25h\n%s\n",hp<=0?"Campaign over — you were defeated.":rank>15?"FIGHTER GUILD COMPLETE — all 15 opponents defeated!":"Campaign abandoned.");
     return 0;

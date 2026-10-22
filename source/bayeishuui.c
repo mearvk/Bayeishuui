@@ -52,12 +52,15 @@ static void fighter(int x,int y,int scale,int player,int guard,int strike) {
     }
     printf("\033[0m");
 }
-static void render(int w,int h,double hp,double ehp,double stamina,double estamina,double gap,int px,int ex,int guard,int strike,const char *message,int frame) {
+static const char *opponents[15] = {"Milo Quickstep","Jax Ironhand","Nia Swift","Bram Stone","Kira Storm","Dante Cross","Sora Blade","Viktor Voss","Mei Dragon","Orion Vale","Zara Night","Cassian Wolf","Rhea Titan","Kael Thunder","The First Fang"};
+static const char *guild_ranks[15] = {"Initiate","Copper","Bronze","Silver","Gold","Platinum","Jade","Ruby","Sapphire","Emerald","Obsidian","Master","Grandmaster","Champion","Guild Legend"};
+static void render(int w,int h,double hp,double ehp,double stamina,double estamina,double gap,int px,int ex,int guard,int strike,const char *message,int frame,int rank) {
     int scene=h-8; if(scene<10) scene=10; if(scene>24) scene=24;
     printf("\033[2J\033[H");
     bg(7,13,25); color(130,205,255);
-    printf("  BAYEISHUUI  /  TERMINAL FIGHT CLUB     ");
-    color(220,225,235); printf("ROUND 01   ");
+    printf("  BAYEISHUUI  /  FIGHTER GUILD     ");
+    color(255,205,115); printf("RANK %02d/15 %s — %s",rank,guild_ranks[rank-1],opponents[rank-1]);
+    color(220,225,235); printf("\n");
     color(255,195,100); printf("DISTANCE %.1fm\n",gap);
     bar("YOU ",hp,14,70,220,255); bar("RIVAL",ehp,14,255,90,105); printf("\n");
     bar("STAMINA",stamina,12,95,235,155); bar("RIVAL",estamina,12,255,180,90); printf("\n");
@@ -94,8 +97,8 @@ int main(int argc,char **argv) {
     atexit(restore); signal(SIGINT,stop_signal); signal(SIGTERM,stop_signal);
     printf("\033[?25l");
     double hp=100,ehp=100,st=100,es=100,gap=3.0,last=now_s(),next_enemy=0,player_cd=0,guard_until=0,enemy_wind=0;
-    int lateral=0, frame=0, strike=0,guard=0; char message[128]="Find your range. Watch the opponent's shoulders.";
-    while(running&&hp>0&&ehp>0){
+    int lateral=0, frame=0, strike=0,guard=0,rank=1; char message[128]="Fighter Guild: defeat all 15 ranked opponents.";
+    while(running&&hp>0&&rank<=15){
         double t=now_s(),dt=clampd(t-last,0,.12); last=t;
         strike=0; guard=t<guard_until;
         if(key_ready()){char k=0; if(read(STDIN_FILENO,&k,1)==1){
@@ -111,17 +114,23 @@ int main(int argc,char **argv) {
             }
         }}
         st=clampd(st+dt*(guard?3:9),0,100); es=clampd(es+dt*7,0,100);
-        if(t>=next_enemy&&gap<3.0){enemy_wind=t+.42;next_enemy=t+1.25+(rand()%100)/100.0;}
+        if(t>=next_enemy&&gap<3.0){enemy_wind=t+.42;next_enemy=t+(1.65-rank*0.055)+(rand()%100)/100.0;}
         if(enemy_wind>0&&t>=enemy_wind){
-            if(gap<=2.1&&abs(lateral)<=2){if(guard){hp=clampd(hp-2,0,100);snprintf(message,sizeof message,"BLOCK! You absorb most of the impact.");}
-                else {hp=clampd(hp-(6+(rand()%9)),0,100);snprintf(message,sizeof message,"RIVAL CONNECTS — reset your guard.");}}
+            if(gap<=2.1&&abs(lateral)<=2){if(guard){hp=clampd(hp-(1+rank/5),0,100);snprintf(message,sizeof message,"BLOCK! You absorb most of the impact.");}
+                else {hp=clampd(hp-(6+rank/2+(rand()%9)),0,100);snprintf(message,sizeof message,"%s connects — defend and counter.",opponents[rank-1]);}}
             else snprintf(message,sizeof message,"The opponent's strike misses at this range.");
             enemy_wind=0;
         }
         if(gap>2.0&&frame%4==0)gap=clampd(gap-.025,.7,6.5);
-        render(w,h,hp,ehp,st,es,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++);
+        render(w,h,hp,ehp,st,es,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++,rank);
         struct timespec pause={0,50000000}; nanosleep(&pause,NULL);
+        if(ehp<=0){
+            if(rank==15){rank=16;break;}
+            rank++; ehp=100; es=100; st=100; gap=3.2; lateral=0; enemy_wind=0; next_enemy=t+1.0; player_cd=t+0.5;
+            hp=clampd(hp+18,0,100);
+            snprintf(message,sizeof message,"RANK PROMOTION! Next Fighter Guild opponent approaches.");
+        }
     }
-    printf("\033[0m\033[?25h\n%s\n",hp<=0?"Bout over — you were knocked out.":ehp<=0?"Victory — opponent defeated.":"Bout abandoned.");
+    printf("\033[0m\033[?25h\n%s\n",hp<=0?"Campaign over — you were defeated.":rank>15?"FIGHTER GUILD COMPLETE — all 15 opponents defeated!":"Campaign abandoned.");
     return 0;
 }

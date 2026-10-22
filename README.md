@@ -22,6 +22,12 @@ make check
 
 Requirements for the native games: GCC or Clang, a Linux/POSIX terminal supporting ANSI escape sequences and UTF-8, and a terminal at least 60 columns by 24 rows. The graphics are rendered directly in the terminal; this is not hardware-accelerated 3D.
 
+## Fighter Guild campaign
+
+The native C and C++ games feature **15 ranked opponents**. Rank increases after every victory, and later opponents attack faster and deal more damage. Health carries between bouts with a limited recovery after each win; stamina is restored for the next bout. Defeat all 15 to complete the Fighter Guild campaign.
+
+The progression runs from **Initiate** through **Copper, Bronze, Silver, Gold, Platinum, Jade, Ruby, Sapphire, Emerald, Obsidian, Master, Grandmaster, Champion**, and finally **Guild Legend**. The opponent roster is documented in [source/README.md](source/README.md).
+
 ## Native controls
 
 | Key | Action |

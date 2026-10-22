@@ -32,9 +32,9 @@ make run-ai
 python3 source/bayeishuui_ai.py
 ```
 
-This command creates a unique `RANDOMTOKEN_YYYYMMDD_ACCOUNT.cfg` file in the **current working directory**. The file includes a local timestamp, operating-system account, Player 1 designation, and the state/action API contract. Existing files are never overwritten.
+The native C and C++ games offer a 21-second startup choice: double-tap **Space** to control Player 1 yourself; otherwise **Perfect Fighter** takes Player 1 automatically. The terminal displays live movement, attack, and defense messages. Press **Escape** to end an active Perfect Fighter session. At session end, a unique `.cfg` is written in the current working directory, named `RANDOMTOKEN_YYYYMMDD_DURATION_ACCOUNT.cfg` (four underscore-separated fields). `DURATION` uses `HHhMMmSSs`; the file records duration, result, mode, wins, losses, and account. Existing files are never overwritten.
 
-The AI exposes `choose_action(state)` for a future engine bridge. It is a strong heuristic baseline, not a mathematical guarantee of perfect play. The native C/C++ games currently own their terminal input loops; the adapter does not yet inject actions into a running native game. See [Player 1 AI API](source/AI_PLAYER_API.md) for the normalized state schema and integration boundary.
+The policy is a strong heuristic, not a mathematical guarantee of perfect play. The Python API remains available for future integrations; see [Player 1 AI API](source/AI_PLAYER_API.md).
 
 ## Fighter Guild campaign
 

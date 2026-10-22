@@ -46,15 +46,15 @@ void fighter(int x,int y,bool player,bool guarding,bool striking) {
 const char* opponents[15]={"Milo Quickstep","Jax Ironhand","Nia Swift","Bram Stone","Kira Storm","Dante Cross","Sora Blade","Viktor Voss","Mei Dragon","Orion Vale","Zara Night","Cassian Wolf","Rhea Titan","Kael Thunder","The First Fang"};
 const char* guildRanks[15]={"Initiate","Copper","Bronze","Silver","Gold","Platinum","Jade","Ruby","Sapphire","Emerald","Obsidian","Master","Grandmaster","Champion","Guild Legend"};
 void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStamina,double gap,int px,int ex,bool guarding,bool striking,const std::string& message,int frame,int rank) {
-    int scene=std::clamp(h-8,10,24), horizon=scene/3;
+    int scene=std::clamp(h-9,9,23), horizon=scene/3;
     std::cout<<"\033[2J\033[H"; fg(130,205,255);
-    std::cout<<"  BAYEISHUUI  /  FIGHTER GUILD     ";fg(255,205,115);
-    std::cout<<"RANK "<<(rank<10?"0":"")<<rank<<"/15 "<<guildRanks[rank-1]<<" — "<<opponents[rank-1]<<"\n";
-    fg(220,225,235);std::cout<<"DISTANCE "<<static_cast<int>(gap*10)/10.0<<"m\n";
+    std::cout<<"  BAYEISHUUI  /  FIGHTER GUILD";fg(255,205,115);
+    std::cout<<"  RANK "<<(rank<10?"0":"")<<rank<<"/15: "<<guildRanks[rank-1]<<"\n";
+    fg(220,225,235);std::cout<<"  OPPONENT: "<<opponents[rank-1]<<" | DISTANCE "<<static_cast<int>(gap*10)/10.0<<"m\n";
     bar("YOU ",hp,14,70,220,255);bar("RIVAL",enemyHp,14,255,90,105);std::cout<<'\n';
     bar("STAMINA",stamina,12,95,235,155);bar("RIVAL",enemyStamina,12,255,180,90);std::cout<<'\n';
     for(int y=0;y<scene;++y) {
-        std::cout<<"\033["<<y+4<<";1H";
+        std::cout<<"\033["<<y+5<<";1H";
         if(y<horizon) { fg(30+y*2,42+y*2,62+y*3);std::cout<<std::string(w,' '); }
         else for(int x=0;x<w;++x) {
             int dx=std::abs(x-w/2),dy=y-horizon;

@@ -48,7 +48,7 @@ static const char *style_notes[15] = {
 "Looks for short-range elbow counters.","Seeks clinch range and sustained knee pressure.","Circles off-line to create awkward angles.","Uses teeps to interrupt forward movement.","Blocks first, then answers with combinations.",
 "Changes stance and attacks from either side.","Baits attacks, then counters at close range.","Attacks the body and taxes your stamina.","Reads patterns, varies rhythm, and counters.","Mixes every Muay Thai tool with few predictable openings."
 };
-static void render(int w,int h,double hp,double ehp,double stamina,double estamina,double gap,int px,int ex,int guard,int strike,const char *message,int frame,int rank,int fight_no,int wins,int losses,int ground_mode) {
+static void render(int w,int h,double hp,double ehp,double stamina,double estamina,double gap,int px,int ex,int guard,int strike,const char *message,int frame,int rank,int fight_no,int wins,int losses,int ground_mode,int ai_mode) {
     int scene=h-9; if(scene<9) scene=9; if(scene>23) scene=23;
     printf("\033[2J\033[H");
     bg(7,13,25); color(130,205,255);
@@ -75,7 +75,7 @@ static void render(int w,int h,double hp,double ehp,double stamina,double estami
     int ey=4+horizon+1+(int)((6.0-gap)*0.8); if(ey>scene+1)ey=scene+1;
     int py=4+scene-5; if(py<ey+3)py=ey+3;
     bay_sprite_draw(ex,ey,0,rank-1,frame,0,0,ground_mode); bay_sprite_draw(px,py,1,0,frame,guard,strike,ground_mode);
-    printf("\033[%d;1H",h-3); color(255,210,130); printf(" %s",message);
+    printf("\033[%d;1H",h-3); color(255,210,130); printf(" %s%s",ai_mode?"PERFECT FIGHTER: ":"",message);
     color(175,190,210); printf("\033[%d;1H W advance  A/D circle  S retreat  SPACE/R/E strike  G guard  J/K/L ground  Q quit",h-1);
     printf("\033[0m"); fflush(stdout);
 }
@@ -142,7 +142,7 @@ int main(int argc,char **argv) {
             enemy_wind=0;
         }
         if(gap>2.0&&frame%4==0)gap=clampd(gap-.025,.7,6.5);
-        render(w,h,hp,ehp,st,es,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++,rank,fight_no,wins,losses,ground_mode);
+        render(w,h,hp,ehp,st,es,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++,rank,fight_no,wins,losses,ground_mode,ai_mode);
         struct timespec pause={0,50000000}; nanosleep(&pause,NULL);
         if(ehp<=0){wins++;total_wins++;fight_no++;ground_mode=ground_unlocked;ground_control=0;ehp=100;es=100;st=100;gap=3.2;lateral=0;enemy_wind=0;next_enemy=t+1.0;player_cd=t+.5;hp=100;
             if(fight_no>17){int rating=80+ground_wins*5;if(rating>100)rating=100;const char *kind=ground_wins>=3?"FINISHER":(ground_wins==0?"STRIKER":"BALANCED STRIKER / FINISHER");snprintf(message,sizeof message,"%s rates you %d/100 — %s.",opponents[rank-1],rating,kind);if(rank==15){rank=16;break;}rank++;fight_no=1;wins=0;damage_to_enemy=0;ground_unlocked=0;ground_wins=0;}else snprintf(message,sizeof message,"BOUT WON — fight %d/17, wins %d, losses %d.",fight_no,wins,losses);

@@ -22,10 +22,10 @@ check:
 build:
 	mkdir -p build
 
-build-c: build
+build-c: build source/bayeishuui_sprites.h
 	$(CC) $(CFLAGS) source/bayeishuui.c -o $(C_GAME) -lm
 
-build-cpp: build
+build-cpp: build source/bayeishuui_sprites.h
 	$(CXX) $(CXXFLAGS) source/bayeishuui.cpp -o $(CPP_GAME)
 
 run-c: build-c

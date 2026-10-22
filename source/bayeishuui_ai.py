@@ -144,10 +144,10 @@ def create_run_config(directory: str | os.PathLike[str] = ".") -> Path:
 
 
 def main() -> int:
-    path = create_run_config(Path.cwd())
-    print(f"Player 1 AI ready. Run configuration: {path.name}")
-    print("Integrate by passing a normalized state mapping to choose_action(state).")
-    print("This adapter does not start or control the game until an engine bridge is connected.")
+    print("Bayeishuui Player 1 AI API module.")
+    print("Launch the live Perfect Fighter with: make run-ai")
+    print("Or use make run-cpp for the same native game.")
+    print("Import choose_action(state) to use the optional engine-neutral API.")
     return 0
 
 

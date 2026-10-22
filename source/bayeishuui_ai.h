@@ -7,7 +7,7 @@
 #include <unistd.h>
 static char bayeishuui_ai_action(double hp,double enemy_hp,double stamina,double gap,int lateral,int ground_mode,int ground_unlocked,int ground_control,double enemy_wind,double t,double player_cooldown){
  if(hp<=0||enemy_hp<=0)return '\0';
- if(enemy_wind>t&&enemy_wind-t<0.34)return stamina>=4?'g':'s';
+ if(enemy_wind>t&&enemy_wind-t<0.50)return stamina>=4?'g':'s';
  if(ground_mode&&ground_unlocked){if(ground_control<2)return 'j';if(stamina>=10)return enemy_hp>18?'k':'l';return 'g';}
  if(stamina<18)return gap<2.4?'g':'s';
  if(abs(lateral)>2)return lateral>0?'a':'d';

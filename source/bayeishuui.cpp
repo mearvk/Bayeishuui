@@ -77,7 +77,7 @@ void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStam
     int py=std::max(4+scene-5,ey+3);
     fighter(ex,ey,false,false,false);fighter(px,py,true,guarding,striking);
     fg(255,210,130);std::cout<<"\033["<<h-3<<";1H "<<message;
-    fg(175,190,210);std::cout<<"\033["<<h-1<<";1H W advance  A/D circle  S retreat  SPACE strike  G guard  Q quit";
+    fg(175,190,210);std::cout<<"\033["<<h-1<<";1H W advance  A/D circle  S retreat  SPACE/R/E strike  G guard  J/K/L ground  Q quit";
     std::cout<<"\033[0m"<<std::flush;
 }
 }

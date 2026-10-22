@@ -62,26 +62,34 @@ static inline void bay_sprite_draw(int x, int y, int player, int style,
      * consecutive 0..243 frame sequence.
      */
     int styled = (f + ((style < 0 ? 0 : style) * 7)) % BAY_SPRITE_FRAME_COUNT;
-    int pose = (styled * BAY_SPRITE_POSE_COUNT) / BAY_SPRITE_FRAME_COUNT;
+    int pose = styled / 15;
     int beat = styled % 15;
+    if (pose >= BAY_SPRITE_POSE_COUNT) pose = BAY_SPRITE_POSE_COUNT - 1;
+    int next_pose = (pose + 1) % BAY_SPRITE_POSE_COUNT;
 
-    if (ground_mode) pose = beat < 5 ? 13 : (beat < 11 ? 14 : 15);
+    if (ground_mode) pose = beat < 5 ? 13 : (beat < 10 ? 14 : 15);
     else if (striking) pose = (style % 3 == 0) ? 4 : ((style % 3 == 1) ? 6 : 8);
-    else if (guarding) pose = beat < 7 ? 1 : 5;
+    else if (guarding) pose = beat < 8 ? 1 : 5;
     else if (pose == 13 || pose == 14 || pose == 15) pose = beat < 8 ? 0 : 10;
+    next_pose = (pose + 1) % BAY_SPRITE_POSE_COUNT;
 
     bay_sprite_color(player, style);
     for (int row = 0; row < 5; ++row) {
         const char *line = bay_sprite_poses[pose][row];
-        printf("\033[%d;%dH", y + row, x);
         /*
-         * Tiny transition beats make adjacent frames read as motion rather
-         * than a hard cut; the silhouette remains fixed-width for terminals.
+         * Each 15-frame beat has three connected stages: held key pose,
+         * alternating limb transition, and arrival at the next key pose.
+         * The renderer advances through all 244 consecutive frame indices.
          */
-        if (beat >= 11 && !ground_mode && !guarding && !striking && row == 1)
-            printf("%s", (styled % 2) ? "  /|\\    " : "  \\|/    ");
-        else
-            printf("%s", line);
+        if (!ground_mode && !guarding && !striking && beat >= 5 && beat < 10 &&
+            ((beat + row + (style < 0 ? 0 : style)) % 2 == 1))
+            line = bay_sprite_poses[next_pose][row];
+        else if (!ground_mode && !guarding && !striking && beat >= 10)
+            line = bay_sprite_poses[next_pose][row];
+        if (ground_mode && beat >= 5 && row == 1)
+            line = (beat % 2) ? " __|____ " : "  _|____ ";
+        printf("\033[%d;%dH", y + row, x);
+        printf("%s", line);
     }
     printf("\033[0m");
 }

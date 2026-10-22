@@ -43,7 +43,7 @@ The progression runs from **Initiate** through **Copper, Bronze, Silver, Gold, P
 
 ## Terminal sprite animation
 
-The player and each of the 15 Fighter Guild opponents have a consecutive **244-frame animation cycle** (indices 0–243), rendered directly as fixed-width ANSI/Unicode terminal sprites. The shared sprite engine adds fighter-specific stance silhouettes, color identity, and timing, with connected motion beats for Muay Thai strikes, footwork, recoil, ground control, ground-and-pound, and finishes. It is designed for the terminal rather than a raster or 3D renderer.
+The sprite engine authors **16 keyframe poses** per fighter and procedurally interpolates between them to produce a connected **244-step animation cycle** (indices 0–243), rendered directly as fixed-width ANSI/Unicode terminal sprites. The in-between frames are tweened at render time rather than stored as raster files. The shared engine adds fighter-specific stance silhouettes, color identity, and timing, with motion beats for Muay Thai strikes, footwork, recoil, ground control, ground-and-pound, and finishes. It is designed for the terminal rather than a raster or 3D renderer.
 
 See [the sprite engine](source/bayeishuui_sprites.h) and [native source notes](source/README.md).
 

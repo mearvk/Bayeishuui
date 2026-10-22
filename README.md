@@ -28,13 +28,12 @@ A tactical, engine-neutral Player 1 AI and input contract are provided in `sourc
 
 ```sh
 make run-ai
-# or
-python3 source/bayeishuui_ai.py
+# or make run-cpp for the same native game
 ```
 
 The native C and C++ games offer a 21-second startup choice: double-tap **Space** to control Player 1 yourself; otherwise **Perfect Fighter** takes Player 1 automatically. The terminal displays live movement, attack, and defense messages. Press **Escape** to end an active Perfect Fighter session. At session end, a unique `.cfg` is written in the current working directory, named `RANDOMTOKEN_YYYYMMDD_DURATION_ACCOUNT.cfg` (four underscore-separated fields). `DURATION` uses `HHhMMmSSs`; the file records duration, result, mode, wins, losses, and account. Existing files are never overwritten.
 
-The policy is a strong heuristic, not a mathematical guarantee of perfect play. The Python API remains available for future integrations; see [Player 1 AI API](source/AI_PLAYER_API.md).
+The policy is a strong heuristic, not a mathematical guarantee of perfect play. The Python module is an optional engine-neutral API helper, not a live game launcher. See [Player 1 AI API](source/AI_PLAYER_API.md).
 
 ## Fighter Guild campaign
 

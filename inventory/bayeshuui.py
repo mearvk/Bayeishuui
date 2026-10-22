@@ -166,7 +166,7 @@ class MartialArtsGame:
             p.x = max(-ARENA_X, min(ARENA_X, p.x + dx))
             # distance is forward separation; lateral movement shifts relative x.
             e.x = max(-ARENA_X, min(ARENA_X, e.x))
-            p.distance = max(0.48, min(6.5, p.distance - dd))
+            p.distance = max(0.48, min(6.5, p.distance + dd))
             # The player moves laterally around the opponent, whose world position
             # is the local origin in this compact arena model.
             p.x = max(-ARENA_X, min(ARENA_X, p.x))

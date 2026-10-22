@@ -2,10 +2,12 @@
 #define BAYEISHUUI_SPRITES_H
 
 /*
- * BAYEISHUUI — proprietary-feeling, terminal-native fighter sprite system.
- * Every fighter cycles through 244 consecutive frames (0..243). Each frame
- * interpolates a skeletal pose into a fixed-width Unicode/ASCII terminal
- * canvas, so the motion is connected without shipping raster files.
+ * BAYEISHUUI — terminal-native fighter sprite system.
+ * 16 hand-authored keyframe poses (BAY_SPRITE_POSE_COUNT) are interpolated into
+ * a connected 244-step cycle (0..243): each step tweens between two consecutive
+ * skeletal poses onto a fixed-width Unicode/ASCII terminal canvas, so the motion
+ * is continuous without shipping raster files. The in-between steps are computed
+ * procedurally at render time, not stored.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -132,7 +134,7 @@ static inline void bay_sprite_draw(int x, int y, int player, int style,
     char canvas[BAY_SPRITE_H][BAY_SPRITE_W + 1];
     for (int row=0;row<BAY_SPRITE_H;++row) {
         for (int col=0;col<BAY_SPRITE_W;++col) canvas[row][col]=' ';
-        canvas[row][BAY_SPRITE_W]='\\0';
+        canvas[row][BAY_SPRITE_W]='\0';
     }
     /* Head, spine, shoulders, arms, hips, knees and feet form a readable glyph fighter. */
     bay_sprite_plot(canvas,v[0],v[1],'O');

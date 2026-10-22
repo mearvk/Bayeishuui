@@ -17,7 +17,26 @@ The native game opens a 21-second startup choice. Double-tap Space within 650 ms
 
 source/bayeishuui_ai.py remains the optional engine-neutral API module; running it directly prints usage guidance rather than launching a fight.
 
-## Engine bridge
+## Two separate policies
+
+There are two distinct Perfect Fighter implementations, and they are **not** the
+same code:
+
+- `source/bayeishuui_ai.h` — the C/C++ header the native games actually run via
+  `make run-ai` / `make run-cpp`. It decides from health, stamina, range, lateral
+  alignment, cooldown, and the opponent's wind-up timer.
+- `source/bayeishuui_ai.py` — an independent, engine-neutral **reference policy**
+  exposed as `choose_action(state)`. It models extra signals (enemy stun/recovery,
+  enemy guard, punish windows) and is intended for embedding in another engine or
+  for offline evaluation. Nothing in the native loop calls it; running it directly
+  just prints usage guidance.
+
+The two policies share the same tactical intent (defend imminent attacks, fix
+alignment and range, conserve stamina, establish ground control before finishing)
+but may choose different actions in the same situation. Treat the Python module as
+an alternate/reference controller, not a mirror of the native one.
+
+## Engine bridge (Python reference policy)
 
 Import `choose_action(state)` and call it once per decision tick. Supply a mapping
 with these normalized values:
@@ -49,6 +68,6 @@ state/action model and repeated simulation-based evaluation.
 
 ## Native terminal behavior
 
-The native C and C++ loops use `source/bayeishuui_ai.h` for tactical decisions. At startup, a 21-second choice window lets the user double-tap Space (two taps within 650 ms) to choose manual Player 1; otherwise Perfect Fighter takes control. Escape ends an active AI session. The terminal renders the fight and updates movement, attack, and defense messages in real time.
+The native C and C++ loops use `source/bayeishuui_ai.h` for tactical decisions (not the Python reference policy above). At startup, a 21-second choice window lets the user double-tap Space (two taps within 650 ms) to choose manual Player 1; otherwise Perfect Fighter takes control. Escape ends an active AI session. The terminal renders the fight and updates movement, attack, and defense messages in real time.
 
 At session end, a `.cfg` is written in the immediate working directory with filename shape `RANDOMTOKEN_YYYYMMDD_DURATION_ACCOUNT.cfg`. Duration is formatted as `HHhMMmSSs`; the record includes duration in seconds, result, mode, wins, losses, and account. Exclusive file creation prevents overwrites. The controller is a strong heuristic, not a mathematical proof of perfect play.

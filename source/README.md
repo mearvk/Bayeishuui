@@ -26,11 +26,11 @@ The campaign has 15 ranked opponents and 17 bouts per opponent (255 scheduled bo
 
 ## Branded terminal sprite system
 
-The native renderer now uses `source/bayeishuui_sprites.h`, a terminal-native sprite engine with a **244-frame consecutive cycle per combatant** (frame indices `0–243`). The player and all 15 Fighter Guild opponents use the same frame contract, for **3,904 indexed combatant frames** across the 16 fighter identities.
+The native renderer uses `source/bayeishuui_sprites.h`, a terminal-native sprite engine built from **16 hand-authored keyframe poses** (`BAY_SPRITE_POSE_COUNT`). Each combatant's motion is a **244-step cycle** (indices `0–243`) produced by linearly interpolating between consecutive poses at render time, with a per-fighter phase offset so the 16 identities don't move in lockstep. The in-between frames are computed procedurally, not stored.
 
-Rather than bundling thousands of redundant bitmap files, each frame is rendered as a fixed-width ANSI/Unicode terminal sprite. The sequence uses connected stance and transition beats covering guard, footwork, straight punches, teep chamber, round kicks, knees, elbows, slips/counters, impact, recoil, ground control, ground-and-pound, and finishing poses. Each opponent receives a signature palette and stance/animation timing tied to their Muay Thai identity. The visual language uses Bayeishuui's own deep-navy arena, cyan player identity, and warm opponent accents.
+Rather than bundling thousands of redundant bitmap files, each step is rendered as a fixed-width ANSI/Unicode terminal sprite. The keyframes cover guard, footwork, straight punches, teep chamber, round kicks, knees, elbows, slips/counters, impact, recoil, ground control, ground-and-pound, and finishing poses. Each opponent receives a signature palette and stance/animation timing tied to their Muay Thai identity. The visual language uses Bayeishuui's own deep-navy arena, cyan player identity, and warm opponent accents.
 
-The frames are consecutive and terminal-friendly; these are authored text-sprite poses and procedural transition frames, not 3,904 separate raster images.
+These are authored text-sprite poses with procedural transition frames, not thousands of separate raster images.
 
 ## Muay Thai foundation and individual styles
 

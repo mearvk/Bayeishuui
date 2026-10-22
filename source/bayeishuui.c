@@ -81,6 +81,7 @@ static void render(int w,int h,double hp,double ehp,double stamina,double estami
 }
 int main(int argc,char **argv) {
     (void)argc; (void)argv; setlocale(LC_ALL,"");
+    srand((unsigned)(time(NULL)^(time_t)getpid()));
     if(!isatty(STDIN_FILENO)||!isatty(STDOUT_FILENO)){fprintf(stderr,"Run this game in an interactive Linux terminal.\n");return 2;}
     struct winsize ws; ioctl(STDOUT_FILENO,TIOCGWINSZ,&ws);
     int w=ws.ws_col?ws.ws_col:80,h=ws.ws_row?ws.ws_row:30;
@@ -105,7 +106,8 @@ int main(int argc,char **argv) {
         strike=0; guard=t<guard_until;
         if(key_ready()||ai_mode){char k=0;int got_key=0;if(ai_mode){if(key_ready()){char uk=0;if(read(STDIN_FILENO,&uk,1)==1&&uk==27){running=0;snprintf(message,sizeof message,"ESCAPE — Perfect Fighter session ended.");}}
  if(running&&t>=ai_next_action){k=bayeishuui_ai_action(hp,ehp,st,gap,lateral,ground_mode,ground_unlocked,ground_control,enemy_wind,t,player_cd);got_key=(k!='\0');ai_next_action=t+0.22;}}
- else if(read(STDIN_FILENO,&k,1)==1)got_key=1;if(got_key){
+ else if(read(STDIN_FILENO,&k,1)==1)got_key=1;
+ if(got_key){
             if(k=='q'||k=='Q')break;
             if(k=='w'||k=='W'){gap=clampd(gap-.22,.7,6.5);snprintf(message,sizeof message,"You step in behind your guard.");}
             if(k=='s'||k=='S'){gap=clampd(gap+.25,.7,6.5);snprintf(message,sizeof message,"You create space.");}
@@ -135,7 +137,7 @@ int main(int argc,char **argv) {
         if(enemy_wind>0&&t>=enemy_wind){
             if(gap<=(rank==5||rank==6||rank==7?1.65:rank==9?2.7:2.1)&&abs(lateral)<=2){
                 int base=(rank==4||rank==11||rank==13?10:rank==5||rank==7?8:6);
-                if(guard){hp=clampd(hp-(1+rank/5),0,100);snprintf(message,sizeof message,"CHECK / BLOCK! You absorb the %s.",rank%4==0?"punches":rank%4==1?"round kick":rank%4==2?"teep":"knee / elbow");}
+                if(guard){hp=clampd(hp-(1+rank/5),0,100);snprintf(message,sizeof message,"CHECK / BLOCK! You absorb the %s.",rank%4==0?"straight punches":rank%4==1?"round kick":rank%4==2?"teep":"knee / elbow");}
                 else {hp=clampd(hp-(base+rank/2+(rand()%7)),0,100);snprintf(message,sizeof message,"%s lands %s — defend and counter.",opponents[rank-1],rank%4==0?"straight punches":rank%4==1?"round kick":rank%4==2?"teep":"knee / elbow");}
             }
             else snprintf(message,sizeof message,"The opponent's strike misses at this range.");

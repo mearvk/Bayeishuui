@@ -80,10 +80,20 @@ static inline int bay_sprite_lerp(int a, int b, int numerator, int denominator) 
     return a + (b - a) * numerator / denominator;
 }
 
-/* Render a unique interpolated frame for each index in the 244-frame cycle. */
-static inline void bay_sprite_draw(int x, int y, int player, int style,
-                                   int frame, int guarding, int striking,
-                                   int ground_mode) {
+/*
+ * Compute the interpolated 12-joint skeleton for a given frame into v[0..23]
+ * (x,y pairs in sprite-grid units). This is the single source of truth for
+ * fighter motion: both the glyph renderer below and the pixel renderer in
+ * bayeishuui_pixels.h call it, so every backend animates identically.
+ *
+ * v layout: head(0,1) neck(2,3) shoulder(4,5) Lelbow(6,7) Lwrist(8,9)
+ *           Relbow(10,11) Rwrist(12,13) hip(14,15) Lknee(16,17) Lfoot(18,19)
+ *           Rknee(20,21) Rfoot(22,23).
+ */
+static inline void bay_sprite_skeleton(int v[24], int player, int style,
+                                        int frame, int guarding, int striking,
+                                        int ground_mode) {
+    (void)player;
     int f = frame % BAY_SPRITE_FRAME_COUNT;
     if (f < 0) f += BAY_SPRITE_FRAME_COUNT;
     int style_id = style < 0 ? 0 : style % 15;
@@ -113,7 +123,7 @@ static inline void bay_sprite_draw(int x, int y, int player, int style,
         fraction = 0;
     }
 
-    int v[24], a[24], b[24];
+    int a[24], b[24];
     a[0]=p.hx;a[1]=p.hy;a[2]=p.nx;a[3]=p.ny;a[4]=p.sx;a[5]=p.sy;
     a[6]=p.lex;a[7]=p.ley;a[8]=p.lwx;a[9]=p.lwy;a[10]=p.rex;a[11]=p.rey;a[12]=p.rwx;a[13]=p.rwy;
     a[14]=p.hipx;a[15]=p.hipy;a[16]=p.lkx;a[17]=p.lky;a[18]=p.lfx;a[19]=p.lfy;a[20]=p.rkx;a[21]=p.rky;a[22]=p.rfx;a[23]=p.rfy;
@@ -130,6 +140,15 @@ static inline void bay_sprite_draw(int x, int y, int player, int style,
         else if (side == 3) { v[8]--; v[12]++; v[7]--; v[11]--; }
         else if (side == 4) { v[18]--; v[22]++; v[19]++; v[23]++; }
     }
+}
+
+/* Render a unique interpolated frame for each index in the 244-frame cycle. */
+static inline void bay_sprite_draw(int x, int y, int player, int style,
+                                   int frame, int guarding, int striking,
+                                   int ground_mode) {
+    int style_id = style < 0 ? 0 : style % 15;
+    int v[24];
+    bay_sprite_skeleton(v, player, style, frame, guarding, striking, ground_mode);
 
     char canvas[BAY_SPRITE_H][BAY_SPRITE_W + 1];
     for (int row=0;row<BAY_SPRITE_H;++row) {

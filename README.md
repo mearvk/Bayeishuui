@@ -7,7 +7,7 @@ Bayeishuui is a Linux-terminal martial-arts duel focused on striking, footwork, 
 The native game is in `/source` and has two standalone implementations. They require no third-party graphics libraries. The C and C++ builds **drive** Bayeishuui — `make run` launches the game.
 
 ```sh
-make run        # build and launch the native game (C++ build)
+make            # build both native binaries (default target)
 
 make build-c
 make run-c
@@ -22,9 +22,38 @@ To compile all native implementations (the source of truth — no Python require
 make check
 ```
 
-The Python files are optional companions kept on their own terms (see
-[Python companions](#python-companions)). `make check-py` gives them a friendly,
-never-fatal checksum greeting.
+### Install and uninstall
+
+`make install` performs a full, FHS-respecting system install of **both**
+native implementations — binaries, man pages, and documentation:
+
+| What | Installed to (under `PREFIX`, default `/usr/local`) |
+| --- | --- |
+| `bayeishuui-c`, `bayeishuui-cpp` | `bin/` |
+| `bayeishuui-c.6`, `bayeishuui-cpp.6` | `share/man/man6/` |
+| README, LICENSE, design & combat docs | `share/doc/bayeishuui/` |
+
+```sh
+sudo make install                 # install both to /usr/local
+sudo make uninstall               # remove everything it installed
+
+make install-c                    # install only the C implementation
+make install-cpp                  # install only the C++ implementation
+
+make install PREFIX=$HOME/.local  # install without root
+make install DESTDIR=/tmp/pkg     # stage into a packaging root (DESTDIR)
+```
+
+After installing you can read the manuals with `man 6 bayeishuui-c` or
+`man 6 bayeishuui-cpp`. `install-c`/`install-cpp` (and the matching
+`uninstall-c`/`uninstall-cpp`) handle a single implementation plus its man
+page. `PREFIX`, `BINDIR`, `MANDIR`, `DOCDIR`, and `DESTDIR` follow the usual
+GNU conventions and can be overridden; `make clean` removes the local
+`build/` directory and Python caches. Run `make help` for a target summary.
+
+The Python files are optional companions kept on their own terms (see the
+Python version section below). The native C and C++ builds are the source of
+truth and require no Python.
 
 Requirements for the native games: GCC or Clang, a Linux/POSIX terminal supporting ANSI escape sequences and UTF-8, and a terminal at least 60 columns by 24 rows. The graphics are rendered directly in the terminal; this is not hardware-accelerated 3D.
 
@@ -81,6 +110,45 @@ The sprite engine authors **16 keyframe poses** per fighter and procedurally int
 
 See [the sprite engine](source/bayeishuui_sprites.h) and [native source notes](source/README.md).
 
+## Pixel-accurate rendering (next-generation terminals)
+
+For terminals that support true pixel graphics, the native C and C++ games
+render the fighters as an actual anti-aliased RGBA bitmap instead of glyph
+cells — shaded head, round-capped limbs with real thickness, gloves, and a
+ground shadow in the per-style colour. The backend is selected once at startup;
+on a plain TTY or over SSH to a terminal without pixel support the games fall
+back to the glyph sprite automatically, so existing behaviour is preserved. It rasterizes the **same 12-joint skeleton** the glyph
+engine uses (via the shared `bay_sprite_skeleton()` in
+[`bayeishuui_sprites.h`](source/bayeishuui_sprites.h)), so motion is identical
+across backends. See [the pixel renderer](source/bayeishuui_pixels.h).
+
+Transport is chosen automatically, in order of fidelity, and always degrades
+cleanly:
+
+1. **Kitty graphics protocol** — RGBA framebuffer, most accurate. Detected for
+   kitty, WezTerm, and ghostty.
+2. **Sixel** — bitmap escape sequence. Detected for foot, mlterm, contour,
+   xterm (sixel), iTerm2, and similar.
+3. **Glyph sprite** — the universal ANSI/Unicode fallback, for a plain TTY or
+   SSH to a terminal without pixel support.
+
+Override detection with the `BAYEISHUUI_RENDERER=kitty|sixel|glyph` environment
+variable. No third-party libraries are used: the skeleton math is shared and
+the base64/Sixel encoders are built in.
+
+```sh
+make demo                                   # build build/bayeishuui-pixeldemo
+make run-demo                               # auto-detect and render a fighter
+
+./build/bayeishuui-pixeldemo --style=4 --frame=42        # pick opponent + frame
+./build/bayeishuui-pixeldemo --backend=kitty --frames=60 # animate in place
+./build/bayeishuui-pixeldemo --style=2 --ppm=out.ppm     # dump exact pixels
+```
+
+The `--ppm=FILE` option writes the exact RGBA frame the terminal would receive
+as a standard image, so the pixel output is verifiable even without a graphical
+terminal.
+
 ## Fighting styles
 
 Muay Thai is the foundation of the native campaign: guard, teep, round kick, punches, knees and close-range elbows. Each of the 15 Fighter Guild opponents has an individual tactical style, displayed in the HUD and reflected in movement, pressure, timing or attack range. Use **Space** for straight/close-range strikes, **R** for a teep, and **E** for a round kick.
@@ -136,7 +204,7 @@ quietly. It never fails the build.
 - `inventory/bayeshuui.py` — optional Python companion: original terminal prototype.
 - `MARTIAL_ARTS_DESIGN.md` — design direction and future phases.
 - `CONTROLS_AND_COMBAT.md` — input and combat contract.
-- `Makefile` — build, run, AI, check, and clean targets.
+- `Makefile` — build (`all`), run, AI, check, install, uninstall, and clean targets.
 
 The game is a stylized terminal-rendered approximation rather than a true 3D renderer or a biomechanically validated fighting simulator.
 

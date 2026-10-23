@@ -1,111 +1,83 @@
-.PHONY: run run-cpp-default run-py run-ai-reference check check-py clean \
-        build-c run-c build-cpp run-cpp run-ai \
+# Bayeishuui — native C11 and C++17 terminal martial-arts duel.
+# Best-effort, FHS-respecting build and install for both implementations.
+
+.PHONY: all run check clean install uninstall \
+        build-c run-c build-cpp run-cpp run-ai demo run-demo \
+        install-c install-cpp uninstall-c uninstall-cpp help \
         build-sheet-c build-sheet-cpp run-sheet-c run-sheet-cpp
 
-PYTHON ?= python3
-CC ?= cc
-CXX ?= c++
-CFLAGS ?= -O2 -Wall -Wextra -Wpedantic -std=c11
-CXXFLAGS ?= -O2 -Wall -Wextra -Wpedantic -std=c++17
-PY_GAME := inventory/bayeshuui.py
-AI_PLAYER := source/bayeishuui_ai.py
-C_GAME := build/bayeishuui-c
-CPP_GAME := build/bayeishuui-cpp
-SHEET_C := build/bayeishuui-sheet-c
-SHEET_CPP := build/bayeishuui-sheet-cpp
+# ---- Toolchain and flags (all overridable) --------------------------------
+PYTHON  ?= python3
+CC      ?= cc
+CXX     ?= c++
+CFLAGS  ?= -O2 -Wall -Wextra -Wpedantic -std=c11
+CXXFLAGS?= -O2 -Wall -Wextra -Wpedantic -std=c++17
+LDLIBS_C ?= -lm
+
+# ---- Project layout -------------------------------------------------------
+VERSION   := 1.0.0
+SRCDIR    := source
+BUILDDIR  := build
+MANDIR_SRC:= man
+PY_GAME   := inventory/bayeshuui.py
+AI_PLAYER := $(SRCDIR)/bayeishuui_ai.py
+HEADERS   := $(SRCDIR)/bayeishuui_sprites.h $(SRCDIR)/bayeishuui_ai.h \
+             $(SRCDIR)/bayeishuui_pixels.h
+C_GAME    := $(BUILDDIR)/bayeishuui-c
+CPP_GAME  := $(BUILDDIR)/bayeishuui-cpp
+DEMO      := $(BUILDDIR)/bayeishuui-pixeldemo
+SHEET_C   := $(BUILDDIR)/bayeishuui-sheet-c
+SHEET_CPP := $(BUILDDIR)/bayeishuui-sheet-cpp
 SAMPLE_SHEET := fighters/the_first_fang.sleela fighters/milo_quickstep.sleela
+C_BIN     := bayeishuui-c
+CPP_BIN   := bayeishuui-cpp
+C_MAN     := $(MANDIR_SRC)/bayeishuui-c.6
+CPP_MAN   := $(MANDIR_SRC)/bayeishuui-cpp.6
+DOCS      := README.md LICENSE CONTROLS_AND_COMBAT.md MARTIAL_ARTS_DESIGN.md
 
-# Recorded SHA-256 of the optional Python companions. check-py greets each file
-# when its hash matches; update these if you intentionally edit the .py files.
-AI_PLAYER_SHA256 := ab62c9226c8d0bc4daf0035ec793b176ff2cbcbd69668c8d93d12e1113406f33
-PY_GAME_SHA256   := 4d9928d35575d97f0600bb9eaba551deb7bf23f8db3da88d6f2ff464ff639106
+# ---- Install locations (GNU / FHS conventions, overridable) ---------------
+PREFIX    ?= /usr/local
+DESTDIR   ?=
+BINDIR    ?= $(PREFIX)/bin
+DATAROOTDIR ?= $(PREFIX)/share
+MANDIR    ?= $(DATAROOTDIR)/man
+MAN6DIR   ?= $(MANDIR)/man6
+DOCDIR    ?= $(DATAROOTDIR)/doc/bayeishuui
+INSTALL        ?= install
+INSTALL_PROGRAM?= $(INSTALL) -m 0755
+INSTALL_DATA   ?= $(INSTALL) -m 0644
 
-# ------------------------------------------------------------------------
-# The native C and C++ builds drive Bayeishuui. `make run` launches the game.
-# The Python files are preserved as optional companions, reachable on their own
-# (run-py / run-ai-reference) and never required by the native build.
-# ------------------------------------------------------------------------
+# ---- Default: build both native implementations ---------------------------
+all: build-c build-cpp
 
-# Default: launch the native game (C++ build drives Player vs Fighter Guild).
-run: run-cpp
+# ---- Build ----------------------------------------------------------------
+$(BUILDDIR):
+	mkdir -p $(BUILDDIR)
 
-# Generate a Player 1 AI run config in the current working directory.
-run-ai: run-cpp
+build-c: $(C_GAME)
+$(C_GAME): $(SRCDIR)/bayeishuui.c $(HEADERS) | $(BUILDDIR)
+	$(CC) $(CFLAGS) $(SRCDIR)/bayeishuui.c -o $@ $(LDLIBS_C)
 
-# Optional Python companions, kept working on their own terms ----------------
+build-cpp: $(CPP_GAME)
+$(CPP_GAME): $(SRCDIR)/bayeishuui.cpp $(HEADERS) | $(BUILDDIR)
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/bayeishuui.cpp -o $@
 
-# The original Python terminal prototype.
-run-py:
-	$(PYTHON) $(PY_GAME)
+# Pixel-accurate renderer demo (Kitty / Sixel / glyph).
+demo: $(DEMO)
+$(DEMO): $(SRCDIR)/bayeishuui_pixeldemo.c $(HEADERS) | $(BUILDDIR)
+	$(CC) $(CFLAGS) $(SRCDIR)/bayeishuui_pixeldemo.c -o $@ $(LDLIBS_C)
 
-# The engine-neutral Player 1 AI reference module (prints its own guidance).
-run-ai-reference:
-	$(PYTHON) $(AI_PLAYER)
-
-# ------------------------------------------------------------------------
-# check: the native build gate. Compiles/links C, C++, and the sheet demos.
-# No Python interpreter required. This is the source of truth for CI.
-# ------------------------------------------------------------------------
-check:
-	$(MAKE) build-c
-	$(MAKE) build-cpp
-	$(MAKE) build-sheet-c
-	$(MAKE) build-sheet-cpp
-
-# ------------------------------------------------------------------------
-# check-py: a friendly, always-successful nod to the optional Python files.
-# For each file: if sha256 matches the recorded hash, greet it and let the
-# module speak in its own voice; if it changed, say so gently; if the tools
-# aren't present, skip quietly. Never fails the build.
-# ------------------------------------------------------------------------
-check-py:
-	@echo "Saying hello to the optional Python companions..."
-	@$(call greet_python,$(AI_PLAYER),$(AI_PLAYER_SHA256),Player 1 AI reference)
-	@$(call greet_python,$(PY_GAME),$(PY_GAME_SHA256),Python game prototype)
-
-# greet_python(file, expected_sha, label): verify + greet, always exit 0.
-define greet_python
-	if ! command -v sha256sum >/dev/null 2>&1; then \
-	  echo "  - $(3): sha256sum not available, skipping (that's OK)."; \
-	elif [ ! -f "$(1)" ]; then \
-	  echo "  - $(3): $(1) not found, skipping (that's OK)."; \
-	else \
-	  got=$$(sha256sum "$(1)" | cut -d' ' -f1); \
-	  if [ "$$got" = "$(2)" ]; then \
-	    echo "  + $(3): checksum matches -- hello, $(1)!"; \
-	    if command -v $(PYTHON) >/dev/null 2>&1; then \
-	      $(PYTHON) "$(1)" 2>/dev/null | sed 's/^/      /' || true; \
-	    else \
-	      echo "      ($(PYTHON) not installed; greeting only.)"; \
-	    fi; \
-	  else \
-	    echo "  ~ $(3): $(1) has changed since its recorded checksum."; \
-	    echo "      If that was intentional, update its *_SHA256 in the Makefile."; \
-	  fi; \
-	fi
-endef
-
-build:
-	mkdir -p build
-
-build-c: build source/bayeishuui_sprites.h
-	$(CC) $(CFLAGS) source/bayeishuui.c -o $(C_GAME) -lm
-
-build-cpp: build source/bayeishuui_sprites.h
-	$(CXX) $(CXXFLAGS) source/bayeishuui.cpp -o $(CPP_GAME)
-
-run-c: build-c
-	./$(C_GAME)
-
-run-cpp: build-cpp
-	./$(CPP_GAME)
+run-demo: demo
+	./$(DEMO)
 
 # SLeeLa character sheet reader/interpreter/disposer demos.
-build-sheet-c: build source/fighter_sheet.h
-	$(CC) $(CFLAGS) source/fighter_sheet_demo.c -o $(SHEET_C)
+build-sheet-c: $(SHEET_C)
+$(SHEET_C): $(SRCDIR)/fighter_sheet_demo.c $(SRCDIR)/fighter_sheet.h | $(BUILDDIR)
+	$(CC) $(CFLAGS) $(SRCDIR)/fighter_sheet_demo.c -o $@
 
-build-sheet-cpp: build source/fighter_sheet.h
-	$(CXX) $(CXXFLAGS) source/fighter_sheet_demo.cpp -o $(SHEET_CPP)
+build-sheet-cpp: $(SHEET_CPP)
+$(SHEET_CPP): $(SRCDIR)/fighter_sheet_demo.cpp $(SRCDIR)/fighter_sheet.h | $(BUILDDIR)
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/fighter_sheet_demo.cpp -o $@
 
 run-sheet-c: build-sheet-c
 	./$(SHEET_C) $(SAMPLE_SHEET)
@@ -113,6 +85,76 @@ run-sheet-c: build-sheet-c
 run-sheet-cpp: build-sheet-cpp
 	./$(SHEET_CPP) $(SAMPLE_SHEET)
 
+# ---- Run ------------------------------------------------------------------
+run:
+	$(PYTHON) $(PY_GAME)
+
+run-c: build-c
+	./$(C_GAME)
+
+run-cpp: build-cpp
+	./$(CPP_GAME)
+
+# Generate a Player 1 AI run config in the current working directory.
+run-ai: run-cpp
+
+# ---- Checks ---------------------------------------------------------------
+check:
+	$(PYTHON) -m py_compile $(PY_GAME) $(AI_PLAYER)
+	$(MAKE) build-c
+	$(MAKE) build-cpp
+	$(MAKE) demo
+	$(MAKE) build-sheet-c
+	$(MAKE) build-sheet-cpp
+
+# ---- Install --------------------------------------------------------------
+# `install` does both; install-c / install-cpp do one implementation each.
+install: install-c install-cpp
+	$(INSTALL) -d $(DESTDIR)$(DOCDIR)
+	$(INSTALL_DATA) $(DOCS) $(DESTDIR)$(DOCDIR)
+
+install-c: build-c
+	$(INSTALL) -d $(DESTDIR)$(BINDIR)
+	$(INSTALL_PROGRAM) $(C_GAME) $(DESTDIR)$(BINDIR)/$(C_BIN)
+	$(INSTALL) -d $(DESTDIR)$(MAN6DIR)
+	$(INSTALL_DATA) $(C_MAN) $(DESTDIR)$(MAN6DIR)/$(C_BIN).6
+
+install-cpp: build-cpp
+	$(INSTALL) -d $(DESTDIR)$(BINDIR)
+	$(INSTALL_PROGRAM) $(CPP_GAME) $(DESTDIR)$(BINDIR)/$(CPP_BIN)
+	$(INSTALL) -d $(DESTDIR)$(MAN6DIR)
+	$(INSTALL_DATA) $(CPP_MAN) $(DESTDIR)$(MAN6DIR)/$(CPP_BIN).6
+
+# ---- Uninstall ------------------------------------------------------------
+uninstall: uninstall-c uninstall-cpp
+	rm -f  $(addprefix $(DESTDIR)$(DOCDIR)/,$(notdir $(DOCS)))
+	-rmdir $(DESTDIR)$(DOCDIR) 2>/dev/null || true
+
+uninstall-c:
+	rm -f $(DESTDIR)$(BINDIR)/$(C_BIN)
+	rm -f $(DESTDIR)$(MAN6DIR)/$(C_BIN).6
+
+uninstall-cpp:
+	rm -f $(DESTDIR)$(BINDIR)/$(CPP_BIN)
+	rm -f $(DESTDIR)$(MAN6DIR)/$(CPP_BIN).6
+
+# ---- Clean ----------------------------------------------------------------
 clean:
-	rm -rf build
+	rm -rf $(BUILDDIR)
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
+
+# ---- Help -----------------------------------------------------------------
+help:
+	@echo "Bayeishuui $(VERSION) — targets:"
+	@echo "  make / make all        Build both native binaries"
+	@echo "  build-c build-cpp      Build one implementation"
+	@echo "  run run-c run-cpp      Run Python / C / C++ games"
+	@echo "  demo run-demo          Build/run the pixel-accurate renderer demo"
+	@echo "  build-sheet-c/-cpp     Build the SLeeLa character-sheet demos"
+	@echo "  run-sheet-c/-cpp       Run the sheet reader on the sample fighters"
+	@echo "  check                  py_compile + build games + demo + sheets"
+	@echo "  install                Install both binaries, man pages, and docs"
+	@echo "  install-c/-cpp         Install a single implementation + its man page"
+	@echo "  uninstall[-c/-cpp]     Remove installed files"
+	@echo "  clean                  Remove build/ and __pycache__"
+	@echo "Vars: PREFIX=$(PREFIX) BINDIR=$(BINDIR) MANDIR=$(MANDIR) DOCDIR=$(DOCDIR) DESTDIR="

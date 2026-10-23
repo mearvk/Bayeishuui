@@ -3,7 +3,8 @@
 
 .PHONY: all run check clean install uninstall \
         build-c run-c build-cpp run-cpp run-ai demo run-demo \
-        install-c install-cpp uninstall-c uninstall-cpp help
+        install-c install-cpp uninstall-c uninstall-cpp help \
+        build-sheet-c build-sheet-cpp run-sheet-c run-sheet-cpp
 
 # ---- Toolchain and flags (all overridable) --------------------------------
 PYTHON  ?= python3
@@ -25,6 +26,9 @@ HEADERS   := $(SRCDIR)/bayeishuui_sprites.h $(SRCDIR)/bayeishuui_ai.h \
 C_GAME    := $(BUILDDIR)/bayeishuui-c
 CPP_GAME  := $(BUILDDIR)/bayeishuui-cpp
 DEMO      := $(BUILDDIR)/bayeishuui-pixeldemo
+SHEET_C   := $(BUILDDIR)/bayeishuui-sheet-c
+SHEET_CPP := $(BUILDDIR)/bayeishuui-sheet-cpp
+SAMPLE_SHEET := fighters/the_first_fang.sleela fighters/milo_quickstep.sleela
 C_BIN     := bayeishuui-c
 CPP_BIN   := bayeishuui-cpp
 C_MAN     := $(MANDIR_SRC)/bayeishuui-c.6
@@ -66,6 +70,21 @@ $(DEMO): $(SRCDIR)/bayeishuui_pixeldemo.c $(HEADERS) | $(BUILDDIR)
 run-demo: demo
 	./$(DEMO)
 
+# SLeeLa character sheet reader/interpreter/disposer demos.
+build-sheet-c: $(SHEET_C)
+$(SHEET_C): $(SRCDIR)/fighter_sheet_demo.c $(SRCDIR)/fighter_sheet.h | $(BUILDDIR)
+	$(CC) $(CFLAGS) $(SRCDIR)/fighter_sheet_demo.c -o $@
+
+build-sheet-cpp: $(SHEET_CPP)
+$(SHEET_CPP): $(SRCDIR)/fighter_sheet_demo.cpp $(SRCDIR)/fighter_sheet.h | $(BUILDDIR)
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/fighter_sheet_demo.cpp -o $@
+
+run-sheet-c: build-sheet-c
+	./$(SHEET_C) $(SAMPLE_SHEET)
+
+run-sheet-cpp: build-sheet-cpp
+	./$(SHEET_CPP) $(SAMPLE_SHEET)
+
 # ---- Run ------------------------------------------------------------------
 run:
 	$(PYTHON) $(PY_GAME)
@@ -85,6 +104,8 @@ check:
 	$(MAKE) build-c
 	$(MAKE) build-cpp
 	$(MAKE) demo
+	$(MAKE) build-sheet-c
+	$(MAKE) build-sheet-cpp
 
 # ---- Install --------------------------------------------------------------
 # `install` does both; install-c / install-cpp do one implementation each.
@@ -125,13 +146,15 @@ clean:
 # ---- Help -----------------------------------------------------------------
 help:
 	@echo "Bayeishuui $(VERSION) — targets:"
-	@echo "  make / make all     Build both native binaries"
-	@echo "  build-c build-cpp   Build one implementation"
-	@echo "  run run-c run-cpp   Run Python / C / C++ games"
-	@echo "  demo run-demo       Build/run the pixel-accurate renderer demo"
-	@echo "  check               py_compile + build both + demo"
-	@echo "  install             Install both binaries, man pages, and docs"
-	@echo "  install-c/-cpp      Install a single implementation + its man page"
-	@echo "  uninstall[-c/-cpp]  Remove installed files"
-	@echo "  clean               Remove build/ and __pycache__"
+	@echo "  make / make all        Build both native binaries"
+	@echo "  build-c build-cpp      Build one implementation"
+	@echo "  run run-c run-cpp      Run Python / C / C++ games"
+	@echo "  demo run-demo          Build/run the pixel-accurate renderer demo"
+	@echo "  build-sheet-c/-cpp     Build the SLeeLa character-sheet demos"
+	@echo "  run-sheet-c/-cpp       Run the sheet reader on the sample fighters"
+	@echo "  check                  py_compile + build games + demo + sheets"
+	@echo "  install                Install both binaries, man pages, and docs"
+	@echo "  install-c/-cpp         Install a single implementation + its man page"
+	@echo "  uninstall[-c/-cpp]     Remove installed files"
+	@echo "  clean                  Remove build/ and __pycache__"
 	@echo "Vars: PREFIX=$(PREFIX) BINDIR=$(BINDIR) MANDIR=$(MANDIR) DOCDIR=$(DOCDIR) DESTDIR="

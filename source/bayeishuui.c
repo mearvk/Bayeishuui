@@ -12,10 +12,14 @@
 #include <time.h>
 #include <unistd.h>
 #include "bayeishuui_sprites.h"
+#include "bayeishuui_pixels.h"
 #include "bayeishuui_ai.h"
 
 static struct termios original;
 static int raw_enabled = 0, running = 1;
+/* Rendering backend chosen once at startup: kitty/sixel pixels where the
+ * terminal supports them, otherwise the universal glyph sprite. */
+static BayBackend g_backend = BAY_BACKEND_GLYPH;
 static void restore(void) {
     if (raw_enabled) { tcsetattr(STDIN_FILENO, TCSAFLUSH, &original); raw_enabled = 0; }
     printf("\033[0m\033[?25h\033[2J\033[H");
@@ -74,7 +78,7 @@ static void render(int w,int h,double hp,double ehp,double stamina,double estami
     }
     int ey=4+horizon+1+(int)((6.0-gap)*0.8); if(ey>scene+1)ey=scene+1;
     int py=4+scene-5; if(py<ey+3)py=ey+3;
-    bay_sprite_draw(ex,ey,0,rank-1,frame,0,0,ground_mode); bay_sprite_draw(px,py,1,0,frame,guard,strike,ground_mode);
+    bay_pixel_draw_backend(g_backend,ex,ey,0,rank-1,frame,0,0,ground_mode); bay_pixel_draw_backend(g_backend,px,py,1,0,frame,guard,strike,ground_mode);
     printf("\033[%d;1H",h-3); color(255,210,130); printf(" %s%s",ai_mode?"PERFECT FIGHTER: ":"",message);
     color(175,190,210); printf("\033[%d;1H W advance  A/D circle  S retreat  SPACE/R/E strike  G guard  J/K/L ground  Q quit",h-1);
     printf("\033[0m"); fflush(stdout);
@@ -90,6 +94,7 @@ int main(int argc,char **argv) {
     struct termios raw=original; raw.c_lflag &= (tcflag_t) ~(ICANON|ECHO); raw.c_iflag &= (tcflag_t) ~(IXON|ICRNL); raw.c_cc[VMIN]=0; raw.c_cc[VTIME]=0;
     if(tcsetattr(STDIN_FILENO,TCSAFLUSH,&raw)<0){perror("tcsetattr");return 2;} raw_enabled=1;
     atexit(restore); signal(SIGINT,stop_signal); signal(SIGTERM,stop_signal);
+    g_backend = bay_detect_backend();
     printf("\033[?25l");
     double hp=100,ehp=100,st=100,es=100,gap=3.0,last=now_s(),next_enemy=0,player_cd=0,guard_until=0,enemy_wind=0;
     int lateral=0,frame=0,strike=0,guard=0,rank=1,fight_no=1,wins=0,losses=0,ground_mode=0,ground_control=0,ground_wins=0,ground_unlocked=0,sudden_death_used=0,total_wins=0,total_losses=0;

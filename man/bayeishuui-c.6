@@ -1,0 +1,56 @@
+.TH BAYEISHUUI-C 6 "October 2026" "Bayeishuui" "Games Manual"
+.SH NAME
+bayeishuui-c \- Linux terminal Muay Thai duel (native C11 implementation)
+.SH SYNOPSIS
+.B bayeishuui-c
+.SH DESCRIPTION
+.B bayeishuui-c
+is the native C11 build of Bayeishuui, a terminal-rendered martial-arts
+duel focused on striking, footwork, range, stamina, and reading an
+opponent's behaviour. The renderer uses ANSI true-colour and Unicode
+terminal drawing to produce a perspective dojo floor, coloured fighter
+silhouettes, health and stamina meters, range feedback, and live combat
+messages. No third-party graphics libraries are required.
+.PP
+At launch the game offers a 21-second Player 1 select: double-tap
+.B Space
+to control Player 1 manually; otherwise the built-in Perfect Fighter
+heuristic takes Player 1 automatically. The campaign runs through the
+Fighter Guild \(em 15 ranked opponents, 17 fights each.
+.SH REQUIREMENTS
+A Linux/POSIX terminal supporting ANSI escape sequences and UTF-8, sized
+at least 60 columns by 24 rows. The game must be run on an interactive
+terminal (a TTY on both standard input and output).
+.SH CONTROLS
+.TS
+l l.
+W	Advance toward the opponent
+A / D	Circle left / right
+S	Retreat
+Space	Strike (straight / close-range)
+R	Teep
+E	Round kick
+G	Guard
+J	Build ground control
+K	Ground-and-pound
+L	Attempt submission after building control
+Q	Quit the bout
+Escape	End an active Perfect Fighter session
+.TE
+.SH FILES
+At session end a run-config file named
+.I RANDOMTOKEN_YYYYMMDD_DURATION_ACCOUNT.cfg
+is written in the current working directory. Existing files are never
+overwritten.
+.SH EXIT STATUS
+.TP
+.B 0
+Normal completion.
+.TP
+.B 2
+Not running on an interactive terminal, or the terminal is smaller than
+60x24.
+.SH SEE ALSO
+.BR bayeishuui-cpp (6)
+.SH LICENSE
+Eclipse Public License 2.0.

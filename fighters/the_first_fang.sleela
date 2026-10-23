@@ -1,0 +1,50 @@
+/*
+ * fighters/the_first_fang.sleela
+ * Bayeishuui SLeeLa Character Sheet.
+ * Definition: Fighter Guild rank 15 (Guild Legend) character sheet, consumed
+ * by the native C/C++ game through fighter_sheet.h. The sheet is a SLeeLa
+ * class file with known stats; the native reader treats it as perfect input.
+ */
+#sleela 2.1
+// A Bayeishuui character sheet is a flat SLeeLa class whose fields are the
+// fighter's identity and combat tuning. The native reader/interpreter parses
+// the `type name = value;` fields inside the class body; string values are
+// quoted, numbers are bare. Unknown fields are ignored, missing fields keep
+// their engine defaults, so a sheet is always "perfect" by construction.
+class Fighter {
+  // ---- Identity ----
+  String name        = "The First Fang";
+  String rankTitle   = "Guild Legend";
+  int    rank        = 15;              // 1..15 Fighter Guild position
+  String style       = "Complete Nak Muay";
+  String tactic      = "Mixes every Muay Thai tool with few predictable openings.";
+
+  // ---- Vitals ----
+  int    health      = 100;            // starting HP
+  int    stamina     = 100;            // starting stamina
+
+  // ---- Striking profile ----
+  int    reach       = 210;            // hundredths of a metre (2.10 m)
+  int    baseDamage  = 10;             // base strike damage before variance
+  int    windupMs    = 580;            // telegraph time before a strike lands
+  int    paceCentis  = 78;             // decision cadence, hundredths (0.78x)
+
+  // ---- Behaviour (0..100 tendencies) ----
+  int    aggression  = 85;             // how readily it closes and commits
+  int    lateral     = 60;             // how much it circles / changes angle
+
+  // ---- Identity colour (terminal sprite accent, 0..255 each) ----
+  int    colorR      = 255;
+  int    colorG      = 245;
+  int    colorB      = 220;
+
+  // Getter surface kept for the SLeeLa ecosystem; the native reader parses the
+  // field initialisers directly and does not call these.
+  String getName()      { return name; }
+  int    getRank()      { return rank; }
+  String getStyle()     { return style; }
+  int    getHealth()    { return health; }
+  int    getReach()     { return reach; }
+  int    getBaseDamage(){ return baseDamage; }
+  int    getAggression(){ return aggression; }
+}

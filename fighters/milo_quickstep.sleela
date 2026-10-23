@@ -1,0 +1,40 @@
+/*
+ * fighters/milo_quickstep.sleela
+ * Bayeishuui SLeeLa Character Sheet.
+ * Definition: Fighter Guild rank 1 (Initiate) character sheet, consumed by the
+ * native C/C++ game through fighter_sheet.h.
+ */
+#sleela 2.1
+// See the full field contract in fighter_sheet.h. The native reader parses the
+// `type name = value;` field initialisers inside the class body.
+class Fighter {
+  // ---- Identity ----
+  String name        = "Milo Quickstep";
+  String rankTitle   = "Initiate";
+  int    rank        = 1;
+  String style       = "Muay Thai Fundamentals";
+  String tactic      = "Balanced stance; checks range before committing.";
+
+  // ---- Vitals ----
+  int    health      = 100;
+  int    stamina     = 100;
+
+  // ---- Striking profile ----
+  int    reach       = 210;            // 2.10 m
+  int    baseDamage  = 6;
+  int    windupMs    = 400;
+  int    paceCentis  = 100;            // 1.00x (slowest decision cadence)
+
+  // ---- Behaviour ----
+  int    aggression  = 40;
+  int    lateral     = 20;
+
+  // ---- Identity colour ----
+  int    colorR      = 255;
+  int    colorG      = 170;
+  int    colorB      = 105;
+
+  String getName()  { return name; }
+  int    getRank()  { return rank; }
+  String getStyle() { return style; }
+}

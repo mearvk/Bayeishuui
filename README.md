@@ -41,6 +41,34 @@ The native C and C++ games feature **15 ranked opponents and 17 fights per oppon
 
 The progression runs from **Initiate** through **Copper, Bronze, Silver, Gold, Platinum, Jade, Ruby, Sapphire, Emerald, Obsidian, Master, Grandmaster, Champion**, and finally **Guild Legend**. The opponent roster is documented in [source/README.md](source/README.md).
 
+## SLeeLa character sheets
+
+Fighters can be described in external **SLeeLa character sheets** — a `.sleela`
+class file (`fighters/<name>.sleela`) whose body holds flat `type name = value;`
+stat fields: identity (`name`, `rankTitle`, `rank`, `style`, `tactic`), vitals
+(`health`, `stamina`), a striking profile (`reach`, `baseDamage`, `windupMs`,
+`paceCentis`), behaviour tendencies (`aggression`, `lateral`, 0–100), and the
+terminal sprite accent (`colorR/G/B`). Sample sheets live in `fighters/`.
+
+The native C and C++ games read these through `source/fighter_sheet.h`, a shared
+header providing a **reader → interpreter → disposer** lifecycle:
+
+- **Reader** `bay_sheet_read(path)` loads the sheet file into a heap buffer.
+- **Interpreter** `bay_fighter_from_source(text)` (or the convenience
+  `bay_fighter_load(path, out)`) extracts the field initialisers into an
+  in-game `BayFighter` struct. The sheet is treated as perfect input: unknown
+  fields are ignored and missing fields keep engine defaults.
+- **Disposer** `bay_sheet_free(buffer)` / `bay_fighter_dispose(fighter)` release
+  the resources.
+
+The reader does not execute SLeeLa; the stats are known constants, so it parses
+the class body directly and stays dependency-free. Try the demos:
+
+```sh
+make run-sheet-c      # C reader/interpreter/disposer over the sample sheets
+make run-sheet-cpp    # same, C++17
+```
+
 ## Terminal sprite animation
 
 The sprite engine authors **16 keyframe poses** per fighter and procedurally interpolates between them to produce a connected **244-step animation cycle** (indices 0–243), rendered directly as fixed-width ANSI/Unicode terminal sprites. The in-between frames are tweened at render time rather than stored as raster files. The shared engine adds fighter-specific stance silhouettes, color identity, and timing, with motion beats for Muay Thai strikes, footwork, recoil, ground control, ground-and-pound, and finishes. It is designed for the terminal rather than a raster or 3D renderer.
@@ -83,6 +111,9 @@ python3 inventory/bayeshuui.py --difficulty hard
 - `source/bayeishuui_sprites.h` — shared terminal sprite engine.
 - `source/bayeishuui_ai.py` — Player 1 tactical AI and run-config writer.
 - `source/AI_PLAYER_API.md` — AI state schema and engine integration contract.
+- `source/fighter_sheet.h` — SLeeLa character sheet reader / interpreter / disposer (C11 + C++17).
+- `source/fighter_sheet_demo.c` / `source/fighter_sheet_demo.cpp` — character sheet demo drivers.
+- `fighters/*.sleela` — SLeeLa character sheets (sample fighter definitions).
 - `source/README.md` — native build and renderer notes.
 - `inventory/bayeshuui.py` — Python terminal game.
 - `MARTIAL_ARTS_DESIGN.md` — design direction and future phases.

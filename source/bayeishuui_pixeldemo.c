@@ -38,22 +38,21 @@ static void write_ppm(const char *path, int player, int style, int frame,
     bay_sprite_skeleton(v, player, style, frame, guard, strike, ground);
     BayRGBA *fb = calloc((size_t)(BAY_PX_W * BAY_PX_H), sizeof(BayRGBA));
     if (!fb) return;
+    /* Use the exact same compositing the game does: dojo backdrop, then the
+     * strike motion trail, then the fighter — so the PPM is a faithful
+     * preview of on-screen pixels. */
+    bay_px_backdrop(fb);
+    bay_px_motion_trail(fb, player, style, frame, guard, strike, ground, style_id);
     bay_px_rasterize(fb, v, player, style_id);
     FILE *f = fopen(path, "wb");
     if (!f) { free(fb); return; }
-    /* composite onto a dark dojo background so the PPM is viewable */
     fprintf(f, "P6\n%d %d\n255\n", BAY_PX_W, BAY_PX_H);
     for (int i = 0; i < BAY_PX_W * BAY_PX_H; ++i) {
-        unsigned a = fb[i].a;
-        unsigned char bgr = 12, bgg = 16, bgb = 28;
-        unsigned char r = (unsigned char)((fb[i].r * a + bgr * (255-a)) / 255);
-        unsigned char g = (unsigned char)((fb[i].g * a + bgg * (255-a)) / 255);
-        unsigned char b = (unsigned char)((fb[i].b * a + bgb * (255-a)) / 255);
-        fputc(r, f); fputc(g, f); fputc(b, f);
+        fputc(fb[i].r, f); fputc(fb[i].g, f); fputc(fb[i].b, f);
     }
     fclose(f);
     free(fb);
-    fprintf(stderr, "Wrote %s (%dx%d RGBA composited over dojo background)\n",
+    fprintf(stderr, "Wrote %s (%dx%d, dojo backdrop + fighter)\n",
             path, BAY_PX_W, BAY_PX_H);
 }
 

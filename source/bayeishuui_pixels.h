@@ -36,10 +36,10 @@
  * defaults assume a typical ~10x20 terminal cell, so a fighter fills roughly
  * the same area it does today but with smooth, sub-cell detail. */
 #ifndef BAY_PX_CELL_W
-#define BAY_PX_CELL_W 10
+#define BAY_PX_CELL_W 20
 #endif
 #ifndef BAY_PX_CELL_H
-#define BAY_PX_CELL_H 20
+#define BAY_PX_CELL_H 40
 #endif
 
 #define BAY_PX_W (BAY_SPRITE_W * BAY_PX_CELL_W)   /* 110 px wide  by default */
@@ -232,16 +232,29 @@ static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
         int i = style_id < 0 ? 0 : style_id % 15;
         br = palette[i][0]; bg = palette[i][1]; bb = palette[i][2];
     }
-    /* A darker shade of the body colour, for gloves / outline accents. */
-    unsigned char dr = (unsigned char)(br*0.42), dg = (unsigned char)(bg*0.42), db = (unsigned char)(bb*0.42);
-    /* Muay Thai shorts: a complementary warm/cool accent per fighter. */
-    unsigned char sr = player ? 235 : (unsigned char)bay_px_clampc(255 - br*0.5);
-    unsigned char sg = player ? 90  : (unsigned char)bay_px_clampc(80 + bg*0.3);
-    unsigned char sb = player ? 110 : (unsigned char)bay_px_clampc(255 - bb*0.4);
+    int sid = style_id < 0 ? 0 : style_id % 15;
+    /* Per-fighter GLOVE and SHORTS colours — bold, fixed, high-contrast
+     * against the body so the Muay Thai kit actually reads. Not derived from
+     * the body colour (that washed out on same-hue fighters). */
+    static const unsigned char glove_pal[15][3] = {
+        {220,40,45},{40,90,230},{230,60,60},{250,180,30},{150,40,230},
+        {230,40,120},{30,180,160},{40,80,210},{235,120,20},{40,110,240},
+        {210,40,180},{230,70,40},{60,190,70},{210,170,30},{235,235,235}
+    };
+    static const unsigned char short_pal[15][3] = {
+        {30,40,110},{210,40,45},{30,70,160},{120,30,140},{235,200,40},
+        {30,120,110},{150,40,50},{230,120,30},{40,60,150},{200,40,60},
+        {40,120,60},{40,80,170},{200,50,120},{60,60,160},{40,50,120}
+    };
+    unsigned char gr, gg, gb, sr, sg, sb;
+    if (player) { gr=235; gg=235; gb=235;  sr=40; sg=90; sb=235; }   /* white gloves, blue trunks */
+    else { gr=glove_pal[sid][0]; gg=glove_pal[sid][1]; gb=glove_pal[sid][2];
+           sr=short_pal[sid][0]; sg=short_pal[sid][1]; sb=short_pal[sid][2]; }
+    /* (silhouette outline colour reserved for a future pass) */
     /* Skin tone for the head, tinted slightly toward the identity colour. */
-    unsigned char kr = bay_px_clampc(222 + (br-180)*0.10);
-    unsigned char kg = bay_px_clampc(180 + (bg-180)*0.10);
-    unsigned char kb = bay_px_clampc(158 + (bb-180)*0.10);
+    unsigned char kr = bay_px_clampc(224 + (br-180)*0.08);
+    unsigned char kg = bay_px_clampc(176 + (bg-180)*0.08);
+    unsigned char kb = bay_px_clampc(150 + (bb-180)*0.08);
 
     /* map grid coords -> device pixels (centre of each cell) */
     #define PX(i) ((v[(i)] + 0.5) * BAY_PX_CELL_W)
@@ -265,13 +278,19 @@ static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
     /* shoulders / collar line */
     bay_px_capsule_shaded(fb, PX(2),PY(3), PX(4),PY(5), torso*0.8, br,bg,bb);
 
-    /* Muay Thai shorts: a coloured waistband plus short legs down each thigh,
-     * so the hips read as trunks rather than a floating bar. */
-    bay_px_capsule_shaded(fb, PX(14)-BAY_PX_CELL_W*0.7, PY(15)-BAY_PX_CELL_H*0.05,
-                              PX(14)+BAY_PX_CELL_W*0.7, PY(15)-BAY_PX_CELL_H*0.05,
-                              torso*0.72, sr,sg,sb);
-    bay_px_capsule_shaded(fb, PX(14),PY(15), PX(14)*0.4+PX(16)*0.6, PY(15)*0.4+PY(17)*0.6, thigh*1.12, sr,sg,sb);
-    bay_px_capsule_shaded(fb, PX(14),PY(15), PX(14)*0.4+PX(20)*0.6, PY(15)*0.4+PY(21)*0.6, thigh*1.12, sr,sg,sb);
+    /* Muay Thai trunks: a bold coloured block over the hips with short legs
+     * down each thigh and a white waistband trim on top, so the kit reads
+     * clearly even when the body shares the fighter's hue. */
+    double hipw = BAY_PX_CELL_W * 0.85;
+    bay_px_capsule_shaded(fb, PX(14)-hipw, PY(15)+BAY_PX_CELL_H*0.08,
+                              PX(14)+hipw, PY(15)+BAY_PX_CELL_H*0.08,
+                              torso*0.82, sr,sg,sb);
+    bay_px_capsule_shaded(fb, PX(14),PY(15)+BAY_PX_CELL_H*0.05, PX(14)*0.35+PX(16)*0.65, PY(15)*0.35+PY(17)*0.65, thigh*1.18, sr,sg,sb);
+    bay_px_capsule_shaded(fb, PX(14),PY(15)+BAY_PX_CELL_H*0.05, PX(14)*0.35+PX(20)*0.65, PY(15)*0.35+PY(21)*0.65, thigh*1.18, sr,sg,sb);
+    /* white waistband trim */
+    bay_px_capsule(fb, PX(14)-hipw, PY(15)-BAY_PX_CELL_H*0.02,
+                       PX(14)+hipw, PY(15)-BAY_PX_CELL_H*0.02,
+                       BAY_PX_CELL_H*0.035, 240,240,245);
 
     /* arms: shoulder->elbow->wrist (left then right) */
     bay_px_capsule_shaded(fb, PX(4),PY(5), PX(6),PY(7),   limb, br,bg,bb);
@@ -279,13 +298,17 @@ static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
     bay_px_capsule_shaded(fb, PX(4),PY(5), PX(10),PY(11), limb, br,bg,bb);
     bay_px_capsule_shaded(fb, PX(10),PY(11),PX(12),PY(13),limb, br,bg,bb);
 
-    /* boxing gloves at the wrists: dark rounded sphere + bright knuckle flash */
-    bay_px_sphere(fb, PX(8),PY(9),   limb*1.40, dr,dg,db);
-    bay_px_sphere(fb, PX(12),PY(13), limb*1.40, dr,dg,db);
-    bay_px_disc(fb, PX(8)-limb*0.45, PY(9)-limb*0.45,   limb*0.34,
-                bay_px_clampc(dr+110), bay_px_clampc(dg+110), bay_px_clampc(db+110));
-    bay_px_disc(fb, PX(12)-limb*0.45, PY(13)-limb*0.45, limb*0.34,
-                bay_px_clampc(dr+110), bay_px_clampc(dg+110), bay_px_clampc(db+110));
+    /* boxing gloves at the wrists: big coloured sphere (per fighter) + a white
+     * wrist cuff and a bright specular, so they look like real gloves. */
+    for (int wi = 0; wi < 2; ++wi) {
+        double wx = wi ? PX(12) : PX(8), wy = wi ? PY(13) : PY(9);
+        double ex = wi ? PX(10) : PX(6), ey = wi ? PY(11) : PY(7);
+        double ang = __builtin_atan2(wy - ey, wx - ex);
+        /* white cuff just behind the glove, toward the forearm */
+        bay_px_disc(fb, wx - __builtin_cos(ang)*limb*0.9,
+                        wy - __builtin_sin(ang)*limb*0.9, limb*0.8, 235,235,240);
+        bay_px_sphere(fb, wx, wy, limb*1.55, gr,gg,gb);
+    }
 
     /* neck */
     bay_px_capsule_shaded(fb, PX(2),PY(3), PX(0),PY(1)+BAY_PX_CELL_H*0.3,
@@ -294,18 +317,24 @@ static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
     /* head: shaded skin sphere */
     double hx = PX(0), hy = PY(1), hr = BAY_PX_CELL_W*0.92;
     bay_px_sphere(fb, hx, hy, hr, kr,kg,kb);
-    /* mongkhon / headband: a coloured ring across the brow in the style colour */
-    for (int yy = (int)(hy - hr*0.55); yy <= (int)(hy - hr*0.18); ++yy)
+    /* mongkhon / headband: a bold ring across the brow in the glove colour,
+     * wrapped onto the head sphere, with two knot tails behind. */
+    for (int yy = (int)(hy - hr*0.62); yy <= (int)(hy - hr*0.08); ++yy)
         for (int xx = (int)(hx - hr); xx <= (int)(hx + hr); ++xx) {
             double dx = (xx + 0.5 - hx) / hr, dy = (yy + 0.5 - hy) / hr;
             double rr = dx*dx + dy*dy;
-            if (rr >= 0.92) continue;
+            if (rr >= 0.95) continue;
             double nz = __builtin_sqrt(1.0 - rr);
-            double shade = 0.6 + 0.5 * (dx*-0.55 + dy*-0.70 + nz*0.45);
-            if (shade < 0.4) shade = 0.4;
-            bay_px_set(fb, xx, yy, bay_px_clampc(br*shade),
-                       bay_px_clampc(bg*shade), bay_px_clampc(bb*shade), 235);
+            double shade = 0.62 + 0.5 * (dx*-0.55 + dy*-0.70 + nz*0.45);
+            if (shade < 0.45) shade = 0.45;
+            bay_px_set(fb, xx, yy, bay_px_clampc(gr*shade),
+                       bay_px_clampc(gg*shade), bay_px_clampc(gb*shade), 255);
         }
+    /* knot tails trailing off the side of the head */
+    bay_px_capsule(fb, hx - hr*0.85, hy - hr*0.3, hx - hr*1.4, hy + hr*0.25,
+                   hr*0.14, gr,gg,gb);
+    bay_px_capsule(fb, hx - hr*0.85, hy - hr*0.1, hx - hr*1.5, hy + hr*0.5,
+                   hr*0.12, gr,gg,gb);
     #undef PX
     #undef PY
 }
@@ -410,6 +439,56 @@ static inline void bay_sixel_emit(const BayRGBA *fb, int col, int row) {
 /* ----------------------------------------------------- unified entry point */
 /* Same signature as bay_sprite_draw(). (x,y) is the 1-based terminal cell
  * where the fighter's top-left begins, matching the glyph renderer. */
+
+/* Gradient dojo backdrop: a soft vertical wash (deep floor -> lighter air)
+ * with a faint radial glow centred on the fighter, so pixels have a stage. */
+static inline void bay_px_backdrop(BayRGBA *fb) {
+    for (int y = 0; y < BAY_PX_H; ++y) {
+        double t = (double)y / (BAY_PX_H - 1);         /* 0 top .. 1 bottom */
+        /* top air is cool indigo, floor is a warmer dark */
+        double r = 16 + (1.0 - t) * 10 + t * 14;
+        double g = 20 + (1.0 - t) * 14 + t * 10;
+        double b = 34 + (1.0 - t) * 26 - t * 6;
+        for (int x = 0; x < BAY_PX_W; ++x) {
+            double dx = (x - BAY_PX_W * 0.5) / (BAY_PX_W * 0.5);
+            double dy = (y - BAY_PX_H * 0.42) / (BAY_PX_H * 0.5);
+            double glow = 1.0 - (dx*dx + dy*dy);        /* centre spotlight */
+            if (glow < 0) glow = 0;
+            BayRGBA *d = &fb[y * BAY_PX_W + x];
+            d->r = bay_px_clampc(r + glow * 26);
+            d->g = bay_px_clampc(g + glow * 24);
+            d->b = bay_px_clampc(b + glow * 30);
+            d->a = 255;
+        }
+    }
+}
+
+/* Motion-blur trail: re-rasterize the fighter at a couple of slightly earlier
+ * frames into the same framebuffer at low alpha, so a strike leaves a sweep.
+ * Reuses the shared skeleton, so the trail tracks real motion. */
+static inline void bay_px_motion_trail(BayRGBA *fb, int player, int style,
+                                       int frame, int guarding, int striking,
+                                       int ground_mode, int style_id) {
+    if (!striking) return;
+    const int steps[2] = { 6, 12 };                     /* frames back */
+    const unsigned char al[2] = { 110, 55 };            /* ghost opacity */
+    for (int s = 0; s < 2; ++s) {
+        int tv[24];
+        bay_sprite_skeleton(tv, player, style, frame - steps[s],
+                            guarding, striking, ground_mode);
+        BayRGBA *ghost = (BayRGBA *)calloc((size_t)(BAY_PX_W * BAY_PX_H), sizeof(BayRGBA));
+        if (!ghost) return;
+        bay_px_rasterize(ghost, tv, player, style_id);
+        for (int i = 0; i < BAY_PX_W * BAY_PX_H; ++i)
+            if (ghost[i].a) {
+                unsigned a = ghost[i].a * al[s] / 255u;
+                bay_px_set(fb, i % BAY_PX_W, i / BAY_PX_W,
+                           ghost[i].r, ghost[i].g, ghost[i].b, (unsigned char)a);
+            }
+        free(ghost);
+    }
+}
+
 static inline void bay_pixel_draw_backend(BayBackend backend,
                                           int x, int y, int player, int style,
                                           int frame, int guarding, int striking,
@@ -423,7 +502,10 @@ static inline void bay_pixel_draw_backend(BayBackend backend,
 
     BayRGBA *fb = (BayRGBA *)calloc((size_t)(BAY_PX_W * BAY_PX_H), sizeof(BayRGBA));
     if (!fb) { bay_sprite_draw(x, y, player, style, frame, guarding, striking, ground_mode); return; }
-    bay_px_rasterize(fb, v, player, style_id);
+    bay_px_backdrop(fb);                                 /* dojo stage */
+    bay_px_motion_trail(fb, player, style, frame, guarding, striking,
+                        ground_mode, style_id);          /* strike sweep */
+    bay_px_rasterize(fb, v, player, style_id);           /* the fighter */
 
     if (backend == BAY_BACKEND_KITTY) bay_kitty_emit(fb, x, y);
     else                              bay_sixel_emit(fb, x, y);

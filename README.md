@@ -4,9 +4,11 @@ Bayeishuui is a Linux-terminal martial-arts duel focused on striking, footwork, 
 
 ## Native C and C++ builds
 
-The native game is in `/source` and has two standalone implementations. They require no third-party graphics libraries.
+The native game is in `/source` and has two standalone implementations. They require no third-party graphics libraries. The C and C++ builds **drive** Bayeishuui — `make run` launches the game.
 
 ```sh
+make run        # build and launch the native game (C++ build)
+
 make build-c
 make run-c
 
@@ -14,11 +16,15 @@ make build-cpp
 make run-cpp
 ```
 
-To compile all implementations and run the Python syntax checks:
+To compile all native implementations (the source of truth — no Python required):
 
 ```sh
 make check
 ```
+
+The Python files are optional companions kept on their own terms (see
+[Python companions](#python-companions)). `make check-py` gives them a friendly,
+never-fatal checksum greeting.
 
 Requirements for the native games: GCC or Clang, a Linux/POSIX terminal supporting ANSI escape sequences and UTF-8, and a terminal at least 60 columns by 24 rows. The graphics are rendered directly in the terminal; this is not hardware-accelerated 3D.
 
@@ -95,27 +101,39 @@ See the complete roster in [source/README.md](source/README.md).
 | L | Attempt submission after building control |
 | Q | Quit the bout |
 
-## Python version
+## Python companions
 
-The original Python terminal implementation remains in `inventory/bayeshuui.py`:
+The C and C++ builds drive the game; the Python files are preserved as optional
+companions, reachable on their own and never required by the native build:
+
+- `inventory/bayeshuui.py` — the original Python terminal prototype.
+- `source/bayeishuui_ai.py` — the engine-neutral Player 1 AI reference module.
 
 ```sh
-make run
-python3 inventory/bayeshuui.py --difficulty hard
+make run-py              # launch the original Python prototype
+make run-ai-reference    # print the AI reference module's guidance
+
+python3 inventory/bayeshuui.py --difficulty hard   # directly, on its own terms
 ```
+
+`make check-py` is a friendly, always-successful nod to these files: for each
+one it compares a recorded SHA-256 and, on a match, greets the file and lets the
+module speak in its own voice. If a file changed, it says so gently (update its
+`*_SHA256` in the `Makefile`); if `sha256sum` or `python3` is absent, it skips
+quietly. It never fails the build.
 
 ## Repository layout
 
 - `source/bayeishuui.c` — native C11 terminal game.
 - `source/bayeishuui.cpp` — native C++17 terminal game.
 - `source/bayeishuui_sprites.h` — shared terminal sprite engine.
-- `source/bayeishuui_ai.py` — Player 1 tactical AI and run-config writer.
+- `source/bayeishuui_ai.py` — optional Python companion: engine-neutral Player 1 AI reference module.
 - `source/AI_PLAYER_API.md` — AI state schema and engine integration contract.
 - `source/fighter_sheet.h` — SLeeLa character sheet reader / interpreter / disposer (C11 + C++17).
 - `source/fighter_sheet_demo.c` / `source/fighter_sheet_demo.cpp` — character sheet demo drivers.
 - `fighters/*.sleela` — SLeeLa character sheets (sample fighter definitions).
 - `source/README.md` — native build and renderer notes.
-- `inventory/bayeshuui.py` — Python terminal game.
+- `inventory/bayeshuui.py` — optional Python companion: original terminal prototype.
 - `MARTIAL_ARTS_DESIGN.md` — design direction and future phases.
 - `CONTROLS_AND_COMBAT.md` — input and combat contract.
 - `Makefile` — build, run, AI, check, and clean targets.

@@ -1,5 +1,9 @@
 # Bayeishuui - /beɪeɪʃʌʌɪ/
 
+![](https://github.com/mearvk/Bayeishuui/blob/main/images/bayeishuui-karate-game-logo001.jpg)
+
+
+
 # Martial Arts Combat
 
 Bayeishuui is a Linux-terminal martial-arts duel focused on striking, footwork, range, stamina, and reading an opponent's behavior. The native renderer uses ANSI true-colour and Unicode terminal drawing to create a perspective dojo floor, coloured fighter silhouettes, health/stamina meters, range feedback, and live combat messages.

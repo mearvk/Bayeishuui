@@ -134,6 +134,89 @@ static inline void bay_px_capsule(BayRGBA *fb, double ax, double ay,
         }
 }
 
+/* ------------------------------------------------- shaded primitives */
+/* A clamped 0..255 helper for blended colour channels. */
+static inline unsigned char bay_px_clampc(double x) {
+    return (unsigned char)(x < 0 ? 0 : x > 255 ? 255 : x + 0.5);
+}
+
+/* Volumetric capsule: a round-capped segment shaded by a fixed top-left key
+ * light, with a brighter rim along the lit edge and a soft dark underside, so
+ * limbs read as rounded 3D tubes rather than flat bars. */
+static inline void bay_px_capsule_shaded(BayRGBA *fb, double ax, double ay,
+                                         double bx, double by, double half,
+                                         unsigned char r, unsigned char g,
+                                         unsigned char b) {
+    /* light direction (normalised), pointing from upper-left */
+    const double lx = -0.55, ly = -0.83;
+    double minx = (ax < bx ? ax : bx) - half - 2, maxx = (ax > bx ? ax : bx) + half + 2;
+    double miny = (ay < by ? ay : by) - half - 2, maxy = (ay > by ? ay : by) + half + 2;
+    double vx = bx - ax, vy = by - ay, len2 = vx*vx + vy*vy;
+    for (int y = (int)miny; y <= (int)maxy; ++y)
+        for (int x = (int)minx; x <= (int)maxx; ++x) {
+            double px = x + 0.5 - ax, py = y + 0.5 - ay;
+            double t = len2 > 0 ? (px*vx + py*vy) / len2 : 0.0;
+            if (t < 0) t = 0; else if (t > 1) t = 1;
+            double qx = px - t*vx, qy = py - t*vy;
+            double dist = __builtin_sqrt(qx*qx + qy*qy);
+            double d = half - dist;
+            if (d <= -1.0) continue;
+            double cov = d >= 0.0 ? 1.0 : d + 1.0;
+            /* surface normal across the tube (perpendicular offset / radius) */
+            double nx = half > 0 ? qx / half : 0, ny = half > 0 ? qy / half : 0;
+            double lambert = nx*lx + ny*ly;           /* -1..1 */
+            double shade = 0.62 + 0.46 * lambert;      /* ambient + diffuse */
+            if (shade < 0.4) shade = 0.4;
+            /* rim: bright thin band where the lit edge meets the silhouette */
+            double edge = dist / half;                  /* 0 centre .. 1 rim */
+            double rim = (lambert > 0.25 && edge > 0.72) ? (edge - 0.72) * 2.6 * lambert : 0.0;
+            double cr = r*shade + (255 - r)*rim;
+            double cg = g*shade + (255 - g)*rim;
+            double cb = b*shade + (255 - b)*rim;
+            bay_px_set(fb, x, y, bay_px_clampc(cr), bay_px_clampc(cg),
+                       bay_px_clampc(cb), (unsigned char)(cov * 255.0 + 0.5));
+        }
+}
+
+/* Volumetric sphere: shaded disc with key light + specular hotspot. */
+static inline void bay_px_sphere(BayRGBA *fb, double cx, double cy, double rad,
+                                 unsigned char r, unsigned char g,
+                                 unsigned char b) {
+    const double lx = -0.55, ly = -0.70, lz = 0.45;   /* light has +z so we get a hotspot */
+    int x0 = (int)(cx - rad - 2), x1 = (int)(cx + rad + 2);
+    int y0 = (int)(cy - rad - 2), y1 = (int)(cy + rad + 2);
+    for (int y = y0; y <= y1; ++y)
+        for (int x = x0; x <= x1; ++x) {
+            double dx = (x + 0.5 - cx) / rad, dy = (y + 0.5 - cy) / rad;
+            double rr = dx*dx + dy*dy;
+            double d = rad - __builtin_sqrt((x+0.5-cx)*(x+0.5-cx) + (y+0.5-cy)*(y+0.5-cy));
+            if (d <= -1.0) continue;
+            double cov = d >= 0.0 ? 1.0 : d + 1.0;
+            double nz = rr < 1.0 ? __builtin_sqrt(1.0 - rr) : 0.0;
+            double lambert = dx*lx + dy*ly + nz*lz;
+            double shade = 0.5 + 0.55 * (lambert > 0 ? lambert : 0);
+            /* specular hotspot */
+            double spec = lambert > 0.86 ? (lambert - 0.86) * 7.0 : 0.0;
+            double cr = r*shade + (255 - r)*spec;
+            double cg = g*shade + (255 - g)*spec;
+            double cb = b*shade + (255 - b)*spec;
+            bay_px_set(fb, x, y, bay_px_clampc(cr), bay_px_clampc(cg),
+                       bay_px_clampc(cb), (unsigned char)(cov * 255.0 + 0.5));
+        }
+}
+
+/* Soft radial ground shadow (wide, short ellipse). */
+static inline void bay_px_ground_shadow(BayRGBA *fb, double cx, double cy,
+                                         double rx, double ry) {
+    for (int y = (int)(cy - ry - 1); y <= (int)(cy + ry + 1); ++y)
+        for (int x = (int)(cx - rx - 1); x <= (int)(cx + rx + 1); ++x) {
+            double dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry;
+            double r = dx*dx + dy*dy;
+            if (r >= 1.0) continue;
+            bay_px_set(fb, x, y, 0, 0, 0, (unsigned char)((1.0 - r) * 90));
+        }
+}
+
 /* Rasterize the interpolated skeleton (joint coords in sprite-grid units)
  * into the RGBA framebuffer at BAY_PX_CELL scale. */
 static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
@@ -149,50 +232,80 @@ static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
         int i = style_id < 0 ? 0 : style_id % 15;
         br = palette[i][0]; bg = palette[i][1]; bb = palette[i][2];
     }
-    /* darker shade for shadow / outline, lighter for highlights */
-    unsigned char dr = (unsigned char)(br*0.45), dg = (unsigned char)(bg*0.45), db = (unsigned char)(bb*0.45);
+    /* A darker shade of the body colour, for gloves / outline accents. */
+    unsigned char dr = (unsigned char)(br*0.42), dg = (unsigned char)(bg*0.42), db = (unsigned char)(bb*0.42);
+    /* Muay Thai shorts: a complementary warm/cool accent per fighter. */
+    unsigned char sr = player ? 235 : (unsigned char)bay_px_clampc(255 - br*0.5);
+    unsigned char sg = player ? 90  : (unsigned char)bay_px_clampc(80 + bg*0.3);
+    unsigned char sb = player ? 110 : (unsigned char)bay_px_clampc(255 - bb*0.4);
+    /* Skin tone for the head, tinted slightly toward the identity colour. */
+    unsigned char kr = bay_px_clampc(222 + (br-180)*0.10);
+    unsigned char kg = bay_px_clampc(180 + (bg-180)*0.10);
+    unsigned char kb = bay_px_clampc(158 + (bb-180)*0.10);
 
     /* map grid coords -> device pixels (centre of each cell) */
     #define PX(i) ((v[(i)] + 0.5) * BAY_PX_CELL_W)
     #define PY(i) ((v[(i)] + 0.5) * BAY_PX_CELL_H)
-    double limb = BAY_PX_CELL_W * 0.42;    /* limb half-thickness */
-    double torso = BAY_PX_CELL_W * 0.55;
+    double limb  = BAY_PX_CELL_W * 0.40;   /* arm/leg half-thickness */
+    double thigh = BAY_PX_CELL_W * 0.48;   /* legs are a touch thicker */
+    double torso = BAY_PX_CELL_W * 0.62;   /* chest mass */
 
-    /* ground shadow ellipse (feet height) */
-    double footY = (PY(19) > PY(23) ? PY(19) : PY(23)) + limb;
-    for (int x = -(int)(BAY_PX_CELL_W*2); x <= (int)(BAY_PX_CELL_W*2); ++x) {
-        double cov = 1.0 - (double)(x*x) / (double)((BAY_PX_CELL_W*2)*(BAY_PX_CELL_W*2));
-        if (cov <= 0) continue;
-        bay_px_set(fb, (int)PX(14)+x, (int)footY, 0,0,0, (unsigned char)(cov*70));
-    }
+    /* soft radial ground shadow under the feet */
+    double footY = (PY(19) > PY(23) ? PY(19) : PY(23)) + limb*0.6;
+    bay_px_ground_shadow(fb, PX(14), footY, BAY_PX_CELL_W*2.2, BAY_PX_CELL_H*0.35);
 
-    /* spine + torso */
-    bay_px_capsule(fb, PX(2),PY(3), PX(14),PY(15), torso, br,bg,bb);
-    /* shoulders */
-    bay_px_capsule(fb, PX(2),PY(3), PX(4),PY(5), limb, br,bg,bb);
+    /* legs first (behind torso): hip->knee->foot, left then right */
+    bay_px_capsule_shaded(fb, PX(14),PY(15), PX(16),PY(17), thigh, br,bg,bb);
+    bay_px_capsule_shaded(fb, PX(16),PY(17), PX(18),PY(19), limb,  br,bg,bb);
+    bay_px_capsule_shaded(fb, PX(14),PY(15), PX(20),PY(21), thigh, br,bg,bb);
+    bay_px_capsule_shaded(fb, PX(20),PY(21), PX(22),PY(23), limb,  br,bg,bb);
+
+    /* spine + chest mass */
+    bay_px_capsule_shaded(fb, PX(2),PY(3), PX(14),PY(15), torso, br,bg,bb);
+    /* shoulders / collar line */
+    bay_px_capsule_shaded(fb, PX(2),PY(3), PX(4),PY(5), torso*0.8, br,bg,bb);
+
+    /* Muay Thai shorts: a coloured waistband plus short legs down each thigh,
+     * so the hips read as trunks rather than a floating bar. */
+    bay_px_capsule_shaded(fb, PX(14)-BAY_PX_CELL_W*0.7, PY(15)-BAY_PX_CELL_H*0.05,
+                              PX(14)+BAY_PX_CELL_W*0.7, PY(15)-BAY_PX_CELL_H*0.05,
+                              torso*0.72, sr,sg,sb);
+    bay_px_capsule_shaded(fb, PX(14),PY(15), PX(14)*0.4+PX(16)*0.6, PY(15)*0.4+PY(17)*0.6, thigh*1.12, sr,sg,sb);
+    bay_px_capsule_shaded(fb, PX(14),PY(15), PX(14)*0.4+PX(20)*0.6, PY(15)*0.4+PY(21)*0.6, thigh*1.12, sr,sg,sb);
+
     /* arms: shoulder->elbow->wrist (left then right) */
-    bay_px_capsule(fb, PX(4),PY(5), PX(6),PY(7),  limb, br,bg,bb);
-    bay_px_capsule(fb, PX(6),PY(7), PX(8),PY(9),  limb, br,bg,bb);
-    bay_px_capsule(fb, PX(4),PY(5), PX(10),PY(11),limb, br,bg,bb);
-    bay_px_capsule(fb, PX(10),PY(11),PX(12),PY(13),limb, br,bg,bb);
-    /* legs: hip->knee->foot (left then right) */
-    bay_px_capsule(fb, PX(14),PY(15), PX(16),PY(17), limb, br,bg,bb);
-    bay_px_capsule(fb, PX(16),PY(17), PX(18),PY(19), limb, br,bg,bb);
-    bay_px_capsule(fb, PX(14),PY(15), PX(20),PY(21), limb, br,bg,bb);
-    bay_px_capsule(fb, PX(20),PY(21), PX(22),PY(23), limb, br,bg,bb);
+    bay_px_capsule_shaded(fb, PX(4),PY(5), PX(6),PY(7),   limb, br,bg,bb);
+    bay_px_capsule_shaded(fb, PX(6),PY(7), PX(8),PY(9),   limb, br,bg,bb);
+    bay_px_capsule_shaded(fb, PX(4),PY(5), PX(10),PY(11), limb, br,bg,bb);
+    bay_px_capsule_shaded(fb, PX(10),PY(11),PX(12),PY(13),limb, br,bg,bb);
 
-    /* gloves (wrists) — darker, slightly larger discs */
-    bay_px_disc(fb, PX(8),PY(9),  limb*1.15, dr,dg,db);
-    bay_px_disc(fb, PX(12),PY(13),limb*1.15, dr,dg,db);
+    /* boxing gloves at the wrists: dark rounded sphere + bright knuckle flash */
+    bay_px_sphere(fb, PX(8),PY(9),   limb*1.40, dr,dg,db);
+    bay_px_sphere(fb, PX(12),PY(13), limb*1.40, dr,dg,db);
+    bay_px_disc(fb, PX(8)-limb*0.45, PY(9)-limb*0.45,   limb*0.34,
+                bay_px_clampc(dr+110), bay_px_clampc(dg+110), bay_px_clampc(db+110));
+    bay_px_disc(fb, PX(12)-limb*0.45, PY(13)-limb*0.45, limb*0.34,
+                bay_px_clampc(dr+110), bay_px_clampc(dg+110), bay_px_clampc(db+110));
 
-    /* head: outline disc then lighter fill for a shaded look */
-    double hx = PX(0), hy = PY(1), hr = BAY_PX_CELL_W*0.9;
-    bay_px_disc(fb, hx, hy, hr, dr,dg,db);
-    bay_px_disc(fb, hx, hy, hr*0.78, br,bg,bb);
-    bay_px_disc(fb, hx - hr*0.3, hy - hr*0.3, hr*0.3,
-                (unsigned char)(br+(255-br)*0.5),
-                (unsigned char)(bg+(255-bg)*0.5),
-                (unsigned char)(bb+(255-bb)*0.5)); /* highlight */
+    /* neck */
+    bay_px_capsule_shaded(fb, PX(2),PY(3), PX(0),PY(1)+BAY_PX_CELL_H*0.3,
+                              BAY_PX_CELL_W*0.32, kr,kg,kb);
+
+    /* head: shaded skin sphere */
+    double hx = PX(0), hy = PY(1), hr = BAY_PX_CELL_W*0.92;
+    bay_px_sphere(fb, hx, hy, hr, kr,kg,kb);
+    /* mongkhon / headband: a coloured ring across the brow in the style colour */
+    for (int yy = (int)(hy - hr*0.55); yy <= (int)(hy - hr*0.18); ++yy)
+        for (int xx = (int)(hx - hr); xx <= (int)(hx + hr); ++xx) {
+            double dx = (xx + 0.5 - hx) / hr, dy = (yy + 0.5 - hy) / hr;
+            double rr = dx*dx + dy*dy;
+            if (rr >= 0.92) continue;
+            double nz = __builtin_sqrt(1.0 - rr);
+            double shade = 0.6 + 0.5 * (dx*-0.55 + dy*-0.70 + nz*0.45);
+            if (shade < 0.4) shade = 0.4;
+            bay_px_set(fb, xx, yy, bay_px_clampc(br*shade),
+                       bay_px_clampc(bg*shade), bay_px_clampc(bb*shade), 235);
+        }
     #undef PX
     #undef PY
 }

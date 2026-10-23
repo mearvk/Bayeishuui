@@ -4,3 +4,5 @@ __pycache__/
 .coverage
 dist/
 build/
+# Per-session fight run-config files written by the native games.
+*.cfg

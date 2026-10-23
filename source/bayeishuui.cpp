@@ -14,11 +14,15 @@
 #include <thread>
 #include <unistd.h>
 #include "bayeishuui_sprites.h"
+#include "bayeishuui_pixels.h"
 #include "bayeishuui_ai.h"
 
 namespace {
 termios original{};
 bool rawEnabled=false, running=true;
+/* Rendering backend chosen once at startup: kitty/sixel pixels where the
+ * terminal supports them, otherwise the universal glyph sprite. */
+BayBackend g_backend=BAY_BACKEND_GLYPH;
 void restore() {
     if(rawEnabled) { tcsetattr(STDIN_FILENO,TCSAFLUSH,&original); rawEnabled=false; }
     std::cout << "\033[0m\033[?25h\033[2J\033[H" << std::flush;
@@ -67,7 +71,7 @@ void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStam
     }
     int ey=std::min(scene+1,4+horizon+1+static_cast<int>((6.0-gap)*.8));
     int py=std::max(4+scene-5,ey+3);
-    bay_sprite_draw(ex,ey,0,rank-1,frame,false,false,groundMode);bay_sprite_draw(px,py,1,0,frame,guarding,striking,groundMode);
+    bay_pixel_draw_backend(g_backend,ex,ey,0,rank-1,frame,false,false,groundMode);bay_pixel_draw_backend(g_backend,px,py,1,0,frame,guarding,striking,groundMode);
     fg(255,210,130);std::cout<<"\033["<<h-3<<";1H "<<(aiMode?"PERFECT FIGHTER: ":"")<<message;
     fg(175,190,210);std::cout<<"\033["<<h-1<<";1H W advance  A/D circle  S retreat  SPACE/R/E strike  G guard  J/K/L ground  Q quit";
     std::cout<<"\033[0m"<<std::flush;
@@ -81,7 +85,7 @@ int main() {
     if(tcgetattr(STDIN_FILENO,&original)<0){perror("tcgetattr");return 2;}
     termios raw=original;raw.c_lflag&=static_cast<tcflag_t>(~(ICANON|ECHO));raw.c_iflag&=static_cast<tcflag_t>(~(IXON|ICRNL));raw.c_cc[VMIN]=0;raw.c_cc[VTIME]=0;
     if(tcsetattr(STDIN_FILENO,TCSAFLUSH,&raw)<0){perror("tcsetattr");return 2;}rawEnabled=true;
-    std::atexit(restore);std::signal(SIGINT,stop);std::signal(SIGTERM,stop);std::cout<<"\033[?25l";
+    std::atexit(restore);std::signal(SIGINT,stop);std::signal(SIGTERM,stop);g_backend=bay_detect_backend();std::cout<<"\033[?25l";
     double hp=100,enemyHp=100,stamina=100,enemyStamina=100,gap=3,last=seconds(),nextEnemy=0,playerCooldown=0,guardUntil=0,enemyWind=0;
     int lateral=0,frame=0,rank=1,fightNo=1,wins=0,losses=0,groundControl=0,groundWins=0;bool strike=false,guard=false,groundMode=false,groundUnlocked=false,suddenDeathUsed=false;int totalWins=0,totalLosses=0;double damageToEnemy=0,sessionStart=0,aiNextAction=0;bool aiMode=true;
     std::string message="Double SPACE within 21 seconds for manual Player 1; otherwise Perfect Fighter.";

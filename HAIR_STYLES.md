@@ -53,8 +53,40 @@ A Perfect Fighter session earns money too.
 - **Up/Down** (or **W/S**, **J/K**, or **1–8**) choose a style; the live
   preview shows your fighter wearing it.
 - **Enter / Space** buys (if new) or equips. **U** upgrades the highlighted
-  style. **Esc / Q / H / B** leaves.
+  style. **T** haggles and **X** trades in (manual players, see Barter below).
+  **Esc / Q / H / B** leaves.
 - Your wallet and current style show on the STYLE row in the HUD.
+
+## Barter (manual players)
+
+Manual players can **haggle** with the barber and **trade in** styles they own.
+In a Perfect Fighter session the barber charges sticker price and refuses to barter.
+(The Player 1 select screen is open to barter, since you have not chosen yet.)
+
+### Haggling — `T`
+
+Highlight a style you want (or one you own, to haggle over its next upgrade) and
+press **T**. You start at a 60% offer.
+
+- **Left/Right** or **-/+** change your offer by $50; **Up/Down** by $250.
+  **Enter** submits it; **A** accepts the barber's counter; **Esc** walks away.
+- The barber has a hidden **reserve price of 70–84% of list**, fixed for the
+  whole shop visit — reopening the haggle cannot re-roll it.
+- An offer at or above the reserve is a **deal at your offer** (never above list).
+- Below it, the barber **counters** (the counters fall toward his reserve) and
+  loses 1 patience. An outright insult (under half his reserve) costs 2.
+- He starts with **3 patience**. At 0 he walks off: no more haggling on that
+  item until your next visit (you can still pay sticker price).
+- You can save up to ~30% — but pushing too hard costs you the discount.
+
+### Trade-in — `X`
+
+Highlight a style you own and press **X**, then highlight the style you want and
+press **Enter**. Credit is **half the style's price plus half of what you spent
+on its upgrades**; you pay the difference (or pocket the surplus). The traded
+style and its upgrades are gone, and the new style is equipped. You cannot trade
+Buzz Cut or the style you are wearing. Trading is deliberately lossy, so buying
+then trading back never makes money.
 
 ## Saved profile
 
@@ -75,5 +107,6 @@ make demo
 ## Source
 
 - `source/bayeishuui_hair.h` — catalog, colours, wallet, profile and shop rules (pure logic).
+- `source/bayeishuui_barter.h` — haggling and trade-in rules (pure logic).
 - `source/bayeishuui_barber.h` — the Barber Shop screen.
 - `source/bayeishuui_sprites.h` / `source/bayeishuui_pixels.h` — glyph and pixel hair rendering.

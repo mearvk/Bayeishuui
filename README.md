@@ -169,7 +169,8 @@ teeps and round kicks. Injuries clear between bouts. Full rules:
 Win bouts, earn in-game money, and spend it at the Barber Shop (press **H**):
 **The Man** for $2000, a **Punk** mohawk for $4500, plus The Lover, Topknot,
 Afro, Dragon Braid and Legend Mane. Every owned style can be **Dyed** ($500) and
-given a shimmering **Glow** ($1500). Cosmetic only; saved between runs. Details:
+given a shimmering **Glow** ($1500). Manual players can also **haggle** with the
+barber (**T**) and **trade in** styles (**X**). Cosmetic only; saved between runs. Details:
 [HAIR_STYLES.md](HAIR_STYLES.md).
 
 ## Fighting styles

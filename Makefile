@@ -22,7 +22,7 @@ MANDIR_SRC:= man
 PY_GAME   := inventory/bayeshuui.py
 AI_PLAYER := $(SRCDIR)/bayeishuui_ai.py
 HEADERS   := $(SRCDIR)/bayeishuui_sprites.h $(SRCDIR)/bayeishuui_ai.h \
-             $(SRCDIR)/bayeishuui_pixels.h $(SRCDIR)/bayeishuui_law.h $(SRCDIR)/bayeishuui_hair.h $(SRCDIR)/bayeishuui_barber.h
+             $(SRCDIR)/bayeishuui_pixels.h $(SRCDIR)/bayeishuui_law.h $(SRCDIR)/bayeishuui_hair.h $(SRCDIR)/bayeishuui_barber.h $(SRCDIR)/bayeishuui_barter.h
 C_GAME    := $(BUILDDIR)/bayeishuui-c
 CPP_GAME  := $(BUILDDIR)/bayeishuui-cpp
 DEMO      := $(BUILDDIR)/bayeishuui-pixeldemo

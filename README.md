@@ -153,6 +153,15 @@ The `--ppm=FILE` option writes the exact RGBA frame the terminal would receive
 as a standard image, so the pixel output is verifiable even without a graphical
 terminal.
 
+## Military Martial Arts Law
+
+Arms can be broken — and the bout **fights on**. Press **B** at clinch range (or
+from ground control) to attempt an arm lock; rivals from rank 3 up can break
+**your** arms too. A broken arm weakens punches and the guard and hangs limp in
+the sprite, but legs stay full strength: with both arms broken you fight on with
+teeps and round kicks. Injuries clear between bouts. Full rules:
+[MILITARY_MARTIAL_ARTS_LAW.md](MILITARY_MARTIAL_ARTS_LAW.md).
+
 ## Fighting styles
 
 Muay Thai is the foundation of the native campaign: guard, teep, round kick, punches, knees and close-range elbows. Each of the 15 Fighter Guild opponents has an individual tactical style, displayed in the HUD and reflected in movement, pressure, timing or attack range. Use **Space** for straight/close-range strikes, **R** for a teep, and **E** for a round kick.
@@ -168,6 +177,7 @@ See the complete roster in [source/README.md](source/README.md).
 | S | Retreat |
 | Space | Strike |
 | G | Guard |
+| B | Arm lock — break an arm (see [Military Martial Arts Law](MILITARY_MARTIAL_ARTS_LAW.md)) |
 | J | Build ground control |
 | K | Ground-and-pound |
 | L | Attempt submission after building control |
@@ -199,6 +209,8 @@ quietly. It never fails the build.
 - `source/bayeishuui.c` — native C11 terminal game.
 - `source/bayeishuui.cpp` — native C++17 terminal game.
 - `source/bayeishuui_sprites.h` — shared terminal sprite engine.
+- `source/bayeishuui_law.h` — Military Martial Arts Law rules (arm breaks), shared by C and C++.
+- `MILITARY_MARTIAL_ARTS_LAW.md` — the Articles, odds and effects of arm breaks.
 - `source/bayeishuui_ai.py` — optional Python companion: engine-neutral Player 1 AI reference module.
 - `source/AI_PLAYER_API.md` — AI state schema and engine integration contract.
 - `source/fighter_sheet.h` — SLeeLa character sheet reader / interpreter / disposer (C11 + C++17).

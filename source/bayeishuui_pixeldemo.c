@@ -8,6 +8,7 @@
  *     --frame=N        animation frame 0..243 (default 42)
  *     --player         render the player-blue fighter instead of an opponent
  *     --guard | --strike | --ground   pose modifiers
+ *     --broken=N       Military Martial Arts Law injury: 1 left arm, 2 right, 3 both
  *     --ppm=FILE       also write the raw RGBA frame as a PPM image (for
  *                      verifying pixel output without a graphical terminal)
  *     --frames=N       animate N frames in place (Kitty/Sixel terminals)
@@ -59,7 +60,7 @@ static void write_ppm(const char *path, int player, int style, int frame,
 int main(int argc, char **argv) {
     BayBackend backend = BAY_BACKEND_UNKNOWN;
     int style = 0, frame = 42, player = 0, guard = 0, strike = 0, ground = 0;
-    int frames = 1;
+    int frames = 1, broken = 0;
     const char *ppm = NULL, *forced = NULL;
 
     for (int i = 1; i < argc; ++i) {
@@ -72,11 +73,12 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--guard"))         guard  = 1;
         else if (!strcmp(argv[i], "--strike"))        strike = 1;
         else if (!strcmp(argv[i], "--ground"))        ground = 1;
+        else if (!strncmp(argv[i], "--broken=", 9))   broken = atoi(argv[i] + 9);
         else if (!strcmp(argv[i], "--help")) {
             fprintf(stderr,
               "bayeishuui-pixeldemo [--backend=auto|kitty|sixel|glyph] "
               "[--style=N] [--frame=N] [--frames=N] [--player] "
-              "[--guard|--strike|--ground] [--ppm=FILE]\n");
+              "[--guard|--strike|--ground] [--broken=1|2|3] [--ppm=FILE]\n");
             return 0;
         }
     }
@@ -89,6 +91,8 @@ int main(int argc, char **argv) {
     } else {
         backend = bay_detect_backend();
     }
+
+    bay_injury_mask[player ? 1 : 0] = (unsigned char)(broken & 3);
 
     if (ppm) write_ppm(ppm, player, style, frame, guard, strike, ground);
 

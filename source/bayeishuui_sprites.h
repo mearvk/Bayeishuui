@@ -17,6 +17,10 @@
 #define BAY_SPRITE_W 11
 #define BAY_SPRITE_H 7
 
+/* Military Martial Arts Law injury state (see bayeishuui_law.h).
+ * Index 0 = rival, 1 = player. Bit 1 = left arm broken, bit 2 = right arm. */
+static unsigned char bay_injury_mask[2] = {0, 0};
+
 typedef struct BaySpritePose {
     int hx,hy, nx,ny, sx,sy;
     int lex,ley, lwx,lwy, rex,rey, rwx,rwy;
@@ -93,7 +97,6 @@ static inline int bay_sprite_lerp(int a, int b, int numerator, int denominator) 
 static inline void bay_sprite_skeleton(int v[24], int player, int style,
                                         int frame, int guarding, int striking,
                                         int ground_mode) {
-    (void)player;
     int f = frame % BAY_SPRITE_FRAME_COUNT;
     if (f < 0) f += BAY_SPRITE_FRAME_COUNT;
     int style_id = style < 0 ? 0 : style % 15;
@@ -139,6 +142,13 @@ static inline void bay_sprite_skeleton(int v[24], int player, int style,
         else if (side == 2) { v[10]++; v[12]++; v[16]--; v[18]--; }
         else if (side == 3) { v[8]--; v[12]++; v[7]--; v[11]--; }
         else if (side == 4) { v[18]--; v[22]++; v[19]++; v[23]++; }
+    }
+
+    /* Broken arm: the limb hangs limp from the shoulder (elbow, then wrist). */
+    {
+        int m = bay_injury_mask[player ? 1 : 0];
+        if (m & 1) { v[6]  = v[4] - 1; v[7]  = v[5] + 1; v[8]  = v[4] - 1; v[9]  = v[5] + 2; }
+        if (m & 2) { v[10] = v[4] + 1; v[11] = v[5] + 1; v[12] = v[4] + 1; v[13] = v[5] + 2; }
     }
 }
 

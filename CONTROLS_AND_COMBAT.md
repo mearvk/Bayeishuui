@@ -9,6 +9,7 @@
 | S | Retreat | Increase distance from the opponent |
 | D | Circle right | Shift laterally to the player's right |
 | Space | Strike | Initiate one straight punch when the fighter can act |
+| B | Arm lock | Attempt to break an arm at clinch range or from ground control; see MILITARY_MARTIAL_ARTS_LAW.md |
 | Q | Quit | Leave the current bout |
 
 W/A/S/D and Space are the five primary gameplay controls. Q is a utility command to exit the terminal game, not a combat action.

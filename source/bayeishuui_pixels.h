@@ -42,8 +42,12 @@
 #define BAY_PX_CELL_H 40
 #endif
 
-#define BAY_PX_W (BAY_SPRITE_W * BAY_PX_CELL_W)   /* 110 px wide  by default */
-#define BAY_PX_H (BAY_SPRITE_H * BAY_PX_CELL_H)   /* 140 px tall  by default */
+/* Headroom above the top glyph row so tall hair (mohawk, pompadour, topknot)
+ * is never clipped. */
+#define BAY_PX_PAD_TOP (BAY_PX_CELL_H / 2)
+
+#define BAY_PX_W (BAY_SPRITE_W * BAY_PX_CELL_W)                      /* wide  */
+#define BAY_PX_H (BAY_SPRITE_H * BAY_PX_CELL_H + BAY_PX_PAD_TOP)     /* tall  */
 
 typedef enum {
     BAY_BACKEND_UNKNOWN = 0,
@@ -217,6 +221,111 @@ static inline void bay_px_ground_shadow(BayRGBA *fb, double cx, double cy,
         }
 }
 
+
+/* ------------------------------------------------------------------ hair */
+/* Upper cap of the head sphere in hair colour: pixels with normalised
+ * dy < hairline (negative = toward the crown), scaled slightly past the skull
+ * so it reads as volume. */
+static inline void bay_px_hair_cap(BayRGBA *fb, double hx, double hy, double hr,
+                                   double scale, double hairline,
+                                   unsigned char r, unsigned char g, unsigned char b) {
+    for (int yy = (int)(hy - hr*scale - 1); yy <= (int)(hy + hr*0.2); ++yy)
+        for (int xx = (int)(hx - hr*scale - 1); xx <= (int)(hx + hr*scale + 1); ++xx) {
+            double dx = (xx + 0.5 - hx) / hr, dy = (yy + 0.5 - hy) / hr;
+            double rr = dx*dx + dy*dy, lim = scale*scale;
+            if (rr >= lim || dy > hairline) continue;
+            double nz = __builtin_sqrt(lim - rr);
+            double shade = 0.62 + 0.5 * (dx*-0.55 + dy*-0.70 + nz*0.45);
+            if (shade < 0.45) shade = 0.45;
+            bay_px_set(fb, xx, yy, bay_px_clampc(r*shade), bay_px_clampc(g*shade),
+                       bay_px_clampc(b*shade), 255);
+        }
+}
+
+/* Tapered spike: thick base capsule then a thin tip. */
+static inline void bay_px_hair_spike(BayRGBA *fb, double ax, double ay, double bx, double by,
+                                     double half, unsigned char r, unsigned char g, unsigned char b) {
+    double mx = ax + (bx - ax) * 0.55, my = ay + (by - ay) * 0.55;
+    bay_px_capsule(fb, ax, ay, mx, my, half, r, g, b);
+    bay_px_capsule(fb, mx, my, bx, by, half * 0.45, r, g, b);
+}
+
+/* Hair that sits BEHIND the head (drawn before the skull). */
+static inline void bay_px_hair_back(BayRGBA *fb, int sel, double hx, double hy, double hr,
+                                    unsigned char r, unsigned char g, unsigned char b) {
+    switch (sel) {
+    case 1: /* The Lover: long flowing locks */
+        bay_px_disc(fb, hx, hy - hr*0.05, hr*1.10, r, g, b);
+        for (int s = -1; s <= 1; s += 2) {
+            bay_px_capsule(fb, hx + s*hr*0.80, hy - hr*0.1, hx + s*hr*1.05, hy + hr*1.1, hr*0.30, r, g, b);
+            bay_px_capsule(fb, hx + s*hr*1.05, hy + hr*1.1, hx + s*hr*0.80, hy + hr*2.2, hr*0.24, r, g, b);
+        }
+        break;
+    case 4: /* Afro: a big round halo */
+        bay_px_sphere(fb, hx, hy - hr*0.30, hr*1.45, r, g, b);
+        break;
+    case 6: { /* Dragon Braid: segmented braid down the back */
+        for (int k = 0; k < 10; ++k) {
+            double bx = hx - hr*0.95 + ((k & 1) ? hr*0.16 : -hr*0.16);
+            double by = hy + hr*0.2 + k*hr*0.30;
+            unsigned char sh = (k & 1) ? 255 : 200;
+            bay_px_disc(fb, bx, by, hr*0.21, (unsigned char)(r*sh/255), (unsigned char)(g*sh/255), (unsigned char)(b*sh/255));
+        }
+        bay_px_disc(fb, hx - hr*0.95, hy + hr*0.2 + 9*hr*0.30 + hr*0.2, hr*0.16, 235, 190, 60);
+        break; }
+    case 7: /* Legend Mane: flowing golden mane */
+        bay_px_disc(fb, hx, hy - hr*0.1, hr*1.22, r, g, b);
+        for (int s = -1; s <= 1; s += 2)
+            bay_px_capsule(fb, hx + s*hr*0.9, hy - hr*0.2, hx + s*hr*1.25, hy + hr*1.4, hr*0.32, r, g, b);
+        break;
+    default: break;
+    }
+}
+
+/* Hair that sits ON the head (drawn after the skull, before the headband). */
+static inline void bay_px_hair_front(BayRGBA *fb, int sel, double hx, double hy, double hr,
+                                     unsigned char r, unsigned char g, unsigned char b) {
+    switch (sel) {
+    case 0: bay_px_hair_cap(fb, hx, hy, hr, 1.03, -0.38, r, g, b); break;
+    case 1:
+        bay_px_hair_cap(fb, hx, hy, hr, 1.07, -0.12, r, g, b);
+        bay_px_disc(fb, hx + hr*0.80, hy - hr*0.55, hr*0.17, 255, 100, 160);   /* ribbon */
+        break;
+    case 2:
+        bay_px_hair_cap(fb, hx, hy, hr, 1.04, -0.30, r, g, b);
+        bay_px_capsule(fb, hx, hy - hr*0.85, hx, hy - hr*1.10, hr*0.20, r, g, b);
+        bay_px_sphere(fb, hx, hy - hr*1.35, hr*0.40, r, g, b);                 /* knot */
+        bay_px_disc(fb, hx, hy - hr*1.02, hr*0.14, 205, 40, 45);               /* tie  */
+        break;
+    case 3:
+        bay_px_hair_cap(fb, hx, hy, hr, 1.06, -0.10, r, g, b);
+        bay_px_capsule(fb, hx - hr*0.70, hy - hr*0.80, hx + hr*0.15, hy - hr*1.50, hr*0.52, r, g, b);
+        bay_px_capsule(fb, hx + hr*0.15, hy - hr*1.50, hx + hr*0.95, hy - hr*1.25, hr*0.34, r, g, b);
+        break;
+    case 4: bay_px_hair_cap(fb, hx, hy, hr, 1.05, -0.30, r, g, b); break;
+    case 5: { /* Punk: mohawk spikes + stud */
+        bay_px_capsule(fb, hx, hy - hr*0.95, hx, hy - hr*0.20, hr*0.16, r, g, b);
+        for (int k = -2; k <= 2; ++k) {
+            double lift = hr * (1.50 + 0.28 * (2 - (k < 0 ? -k : k)));
+            bay_px_hair_spike(fb, hx + k*hr*0.28, hy - hr*0.75, hx + k*hr*0.36, hy - lift, hr*0.17, r, g, b);
+        }
+        bay_px_disc(fb, hx + hr*0.92, hy + hr*0.35, hr*0.09, 225, 230, 240);   /* stud */
+        break; }
+    case 6: bay_px_hair_cap(fb, hx, hy, hr, 1.05, -0.20, r, g, b); break;
+    case 7: {
+        bay_px_hair_cap(fb, hx, hy, hr, 1.06, -0.10, r, g, b);
+        for (int k = -3; k <= 3; ++k) {
+            double a = k * 0.38, ak = k < 0 ? -k : k;
+            double sx = __builtin_sin(a), cy = __builtin_cos(a);
+            bay_px_hair_spike(fb, hx + sx*hr*0.85, hy - cy*hr*0.85,
+                                  hx + sx*hr*(1.85 - ak*0.05), hy - cy*hr*(1.55 + (3 - ak)*0.10),
+                                  hr*0.20, r, g, b);
+        }
+        break; }
+    default: break;
+    }
+}
+
 /* Rasterize the interpolated skeleton (joint coords in sprite-grid units)
  * into the RGBA framebuffer at BAY_PX_CELL scale. */
 static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
@@ -258,7 +367,7 @@ static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
 
     /* map grid coords -> device pixels (centre of each cell) */
     #define PX(i) ((v[(i)] + 0.5) * BAY_PX_CELL_W)
-    #define PY(i) ((v[(i)] + 0.5) * BAY_PX_CELL_H)
+    #define PY(i) ((v[(i)] + 0.5) * BAY_PX_CELL_H + BAY_PX_PAD_TOP)
     double limb  = BAY_PX_CELL_W * 0.40;   /* arm/leg half-thickness */
     double thigh = BAY_PX_CELL_W * 0.48;   /* legs are a touch thicker */
     double torso = BAY_PX_CELL_W * 0.62;   /* chest mass */
@@ -316,7 +425,12 @@ static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
 
     /* head: shaded skin sphere */
     double hx = PX(0), hy = PY(1), hr = BAY_PX_CELL_W*0.92;
+    int hsel = bay_hair_sel[player ? 1 : 0] % BAY_HAIR_COUNT, hlvl = bay_hair_lvl[player ? 1 : 0], hcr, hcg, hcb;
+    if (hsel < 0) hsel = 0;
+    bay_hair_color(hsel, hlvl, bay_hair_phase, &hcr, &hcg, &hcb);
+    bay_px_hair_back(fb, hsel, hx, hy, hr, (unsigned char)hcr, (unsigned char)hcg, (unsigned char)hcb);
     bay_px_sphere(fb, hx, hy, hr, kr,kg,kb);
+    bay_px_hair_front(fb, hsel, hx, hy, hr, (unsigned char)hcr, (unsigned char)hcg, (unsigned char)hcb);
     /* mongkhon / headband: a bold ring across the brow in the glove colour,
      * wrapped onto the head sphere, with two knot tails behind. */
     for (int yy = (int)(hy - hr*0.62); yy <= (int)(hy - hr*0.08); ++yy)

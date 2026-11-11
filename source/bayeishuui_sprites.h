@@ -11,6 +11,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include "bayeishuui_hair.h"
 
 #define BAY_SPRITE_FRAME_COUNT 244
 #define BAY_SPRITE_POSE_COUNT 16
@@ -99,6 +100,7 @@ static inline void bay_sprite_skeleton(int v[24], int player, int style,
                                         int ground_mode) {
     int f = frame % BAY_SPRITE_FRAME_COUNT;
     if (f < 0) f += BAY_SPRITE_FRAME_COUNT;
+    bay_hair_phase = f;
     int style_id = style < 0 ? 0 : style % 15;
     int styled = (f + style_id * 7) % BAY_SPRITE_FRAME_COUNT;
     int scaled = styled * BAY_SPRITE_POSE_COUNT;
@@ -180,6 +182,16 @@ static inline void bay_sprite_draw(int x, int y, int player, int style,
     for (int row=0;row<BAY_SPRITE_H;++row) {
         printf("\033[%d;%dH",y+row,x);
         printf("%s",canvas[row]);
+    }
+    /* Hair: a coloured glyph just above the head (own row, so it never
+     * collides with the body). Tier-2 "Glow" hair shimmers with the frame. */
+    {
+        int sel = bay_hair_sel[player ? 1 : 0], lvl = bay_hair_lvl[player ? 1 : 0], hr, hg, hb;
+        const BayHairStyle *hs = &bay_hair_styles[(sel < 0 || sel >= BAY_HAIR_COUNT) ? 0 : sel];
+        bay_hair_color(sel, lvl, frame, &hr, &hg, &hb);
+        int hrow = y + v[1] - 1, hcol = x + v[0] - hs->glyph_w / 2;
+        if (hrow >= 1 && hcol >= 1)
+            printf("\033[%d;%dH\033[38;2;%d;%d;%dm%s", hrow, hcol, hr, hg, hb, hs->glyph);
     }
     printf("\033[0m");
 }

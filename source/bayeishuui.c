@@ -15,6 +15,8 @@
 #include "bayeishuui_pixels.h"
 #include "bayeishuui_ai.h"
 #include "bayeishuui_law.h"
+#include "bayeishuui_hair.h"
+#include "bayeishuui_barber.h"
 
 static struct termios original;
 static int raw_enabled = 0, running = 1;
@@ -82,6 +84,7 @@ static void render(int w,int h,double hp,double ehp,double stamina,double estami
     bay_pixel_draw_backend(g_backend,ex,ey,0,rank-1,frame,0,0,ground_mode); bay_pixel_draw_backend(g_backend,px,py,1,0,frame,guard,strike,ground_mode);
     printf("\033[%d;1H",h-3); color(255,210,130); printf(" %s%s",ai_mode?"PERFECT FIGHTER: ":"",message);
     bay_law_draw_status(h-2);
+    bay_hair_draw_hud(w);
     color(175,190,210); printf("\033[%d;1H W advance  A/D circle  S retreat  SPACE/R/E strike  G guard  J/K/L ground  Q quit",h-1);
     printf("\033[0m"); fflush(stdout);
 }
@@ -100,22 +103,26 @@ int main(int argc,char **argv) {
     printf("\033[?25l");
     double hp=100,ehp=100,st=100,es=100,gap=3.0,last=now_s(),next_enemy=0,player_cd=0,guard_until=0,enemy_wind=0;
     int lateral=0,frame=0,strike=0,guard=0,rank=1,fight_no=1,wins=0,losses=0,ground_mode=0,ground_control=0,ground_wins=0,ground_unlocked=0,sudden_death_used=0,total_wins=0,total_losses=0;
-    double damage_to_enemy=0,session_start=0,ai_next_action=0; int ai_mode=1,arms_dealt=0,arms_taken=0;
+    double damage_to_enemy=0,session_start=0,ai_next_action=0; int ai_mode=1,arms_dealt=0,arms_taken=0,bout_arms=0; long last_reward=0; BayProfile prof; bay_profile_load(&prof);
+#define BARBER_BREAK() do{double bt_=now_s();bay_barber_shop(&prof,g_backend,w,h);double el_=now_s()-bt_;next_enemy+=el_;if(enemy_wind>0)enemy_wind+=el_;guard_until+=el_;player_cd+=el_;ai_next_action+=el_;last=now_s();}while(0)
+
     char message[192]="Double SPACE within 21 seconds for manual Player 1; otherwise Perfect Fighter.";
-    printf("\033[2J\033[H\033[?25lBAYEISHUUI — PLAYER 1 SELECT\n\nDouble-tap SPACE within 21 seconds for manual play.\nOtherwise Perfect Fighter plays Player 1.\nPress ESC to cancel.\nMILITARY MARTIAL ARTS LAW IN FORCE: arms can break (B) - the bout fights on.\n");fflush(stdout);
+    printf("\033[2J\033[H\033[?25lBAYEISHUUI — PLAYER 1 SELECT\n\nDouble-tap SPACE within 21 seconds for manual play.\nOtherwise Perfect Fighter plays Player 1.\nPress ESC to cancel.\nMILITARY MARTIAL ARTS LAW IN FORCE: arms can break (B) - the bout fights on.\nPress H for the BARBER SHOP - hair styles from $800. Wallet: $%ld\n",prof.money);fflush(stdout);
     double choice_start=now_s(),last_space=-10.0;
-    while(running&&now_s()-choice_start<21.0){if(key_ready()){char ck=0;if(read(STDIN_FILENO,&ck,1)==1){double kt=now_s();if(ck==27){running=0;break;}if(ck==' '&&kt-last_space<=0.65){ai_mode=0;break;}if(ck==' ')last_space=kt;}}
-      printf("\033[7;1HStarting Perfect Fighter in %02d seconds...  ",21-(int)(now_s()-choice_start));fflush(stdout);struct timespec cp={0,50000000};nanosleep(&cp,NULL);}
+    while(running&&now_s()-choice_start<21.0){if(key_ready()){char ck=0;if(read(STDIN_FILENO,&ck,1)==1){double kt=now_s();if(ck==27){running=0;break;}if(ck=='h'||ck=='H'){bay_barber_shop(&prof,g_backend,w,h);choice_start=now_s();last_space=-10.0;printf("\033[2J\033[H\033[?25lBAYEISHUUI — PLAYER 1 SELECT\n\nDouble-tap SPACE within 21 seconds for manual play.\nOtherwise Perfect Fighter plays Player 1.\nPress ESC to cancel.\nMILITARY MARTIAL ARTS LAW IN FORCE: arms can break (B) - the bout fights on.\nPress H for the BARBER SHOP - hair styles from $800. Wallet: $%ld\n",prof.money);continue;}if(ck==' '&&kt-last_space<=0.65){ai_mode=0;break;}if(ck==' ')last_space=kt;}}
+      printf("\033[8;1HStarting Perfect Fighter in %02d seconds...  ",21-(int)(now_s()-choice_start));fflush(stdout);struct timespec cp={0,50000000};nanosleep(&cp,NULL);}
     if(!running){printf("\nSession cancelled.\n");return 0;}session_start=now_s();last=session_start;
     snprintf(message,sizeof message,"%s",ai_mode?"PERFECT FIGHTER ACTIVE — live actions; ESC ends session.":"MANUAL PLAYER 1 — your controls are active.");
     while(running&&hp>0&&rank<=15){
         double t=now_s(),dt=clampd(t-last,0,.12); last=t;
+        bay_hair_sel[0]=bay_hair_rival_style(rank);bay_hair_lvl[0]=bay_hair_rival_level(rank);bay_hair_sel[1]=prof.equipped;bay_hair_lvl[1]=prof.level[prof.equipped];bay_hud_money=prof.money;
         strike=0; guard=t<guard_until;
-        if(key_ready()||ai_mode){char k=0;int got_key=0;if(ai_mode){if(key_ready()){char uk=0;if(read(STDIN_FILENO,&uk,1)==1&&uk==27){running=0;snprintf(message,sizeof message,"ESCAPE — Perfect Fighter session ended.");}}
+        if(key_ready()||ai_mode){char k=0;int got_key=0;if(ai_mode){if(key_ready()){char uk=0;ssize_t ur=read(STDIN_FILENO,&uk,1);if(ur==1&&uk==27){running=0;snprintf(message,sizeof message,"ESCAPE — Perfect Fighter session ended.");}else if(ur==1&&(uk=='h'||uk=='H')){BARBER_BREAK();}}
  if(running&&t>=ai_next_action){k=bay_law_ai_action(hp,st,gap,lateral,ground_mode,ground_control,ehp,bay_injury_mask[0],enemy_wind,t,player_cd);if(!k){k=bayeishuui_ai_action(hp,ehp,st,gap,lateral,ground_mode,ground_unlocked,ground_control,enemy_wind,t,player_cd);if(k==' '&&!bay_law_can_punch(bay_injury_mask[1]))k='r';}got_key=(k!='\0');ai_next_action=t+0.22;}}
  else if(read(STDIN_FILENO,&k,1)==1)got_key=1;
  if(got_key){
             if(k=='q'||k=='Q')break;
+            if(k=='h'||k=='H'){BARBER_BREAK();}
             if(k=='w'||k=='W'){gap=clampd(gap-.22,.7,6.5);snprintf(message,sizeof message,"You step in behind your guard.");}
             if(k=='s'||k=='S'){gap=clampd(gap+.25,.7,6.5);snprintf(message,sizeof message,"You create space.");}
             if(k=='a'||k=='A'){lateral=clampd(lateral-1,-3,3);snprintf(message,sizeof message,"You circle left.");}
@@ -129,7 +136,7 @@ int main(int argc,char **argv) {
                 else{
                     int chance=bay_law_break_chance(rank,ground_control,ground_mode,es);
                     st-=BAY_LAW_BREAK_STAMINA;player_cd=t+1.0;strike=1;
-                    if(rand()%100<chance){int arm=bay_law_pick_arm(bay_injury_mask[0],rand());bay_injury_mask[0]=(unsigned char)(bay_injury_mask[0]|arm);ehp=clampd(ehp-BAY_LAW_BREAK_DAMAGE,0,100);arms_dealt++;
+                    if(rand()%100<chance){int arm=bay_law_pick_arm(bay_injury_mask[0],rand());bay_injury_mask[0]=(unsigned char)(bay_injury_mask[0]|arm);ehp=clampd(ehp-BAY_LAW_BREAK_DAMAGE,0,100);arms_dealt++;bout_arms++;
                         snprintf(message,sizeof message,"CRACK! You break %s's %s arm! MMAL: the bout fights on.",opponents[rank-1],bay_law_arm_name(arm));}
                     else snprintf(message,sizeof message,"Arm lock slips free (%d%% chance). Reset and try again.",chance);
                 }
@@ -170,12 +177,14 @@ int main(int argc,char **argv) {
         if(gap>2.0&&frame%4==0)gap=clampd(gap-.025,.7,6.5);
         render(w,h,hp,ehp,st,es,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++,rank,fight_no,wins,losses,ground_mode,ai_mode);
         struct timespec pause={0,50000000}; nanosleep(&pause,NULL);
-        if(ehp<=0){bay_injury_mask[0]=bay_injury_mask[1]=0;wins++;total_wins++;fight_no++;ground_mode=ground_unlocked;ground_control=0;ehp=100;es=100;st=100;gap=3.2;lateral=0;enemy_wind=0;next_enemy=t+1.0;player_cd=t+.5;hp=100;
-            if(fight_no>17){int rating=80+ground_wins*5;if(rating>100)rating=100;const char *kind=ground_wins>=3?"FINISHER":(ground_wins==0?"STRIKER":"BALANCED STRIKER / FINISHER");snprintf(message,sizeof message,"%s rates you %d/100 — %s.",opponents[rank-1],rating,kind);if(rank==15){rank=16;break;}rank++;fight_no=1;wins=0;damage_to_enemy=0;ground_unlocked=0;ground_wins=0;}else snprintf(message,sizeof message,"BOUT WON — fight %d/17, wins %d, losses %d.",fight_no,wins,losses);
+        if(ehp<=0){bay_injury_mask[0]=bay_injury_mask[1]=0;wins++;total_wins++;fight_no++;last_reward=bay_profile_bout_reward(rank,bout_arms,fight_no>17);prof.money+=last_reward;if(prof.money>BAY_MONEY_CAP)prof.money=BAY_MONEY_CAP;bout_arms=0;bay_profile_save(&prof);ground_mode=ground_unlocked;ground_control=0;ehp=100;es=100;st=100;gap=3.2;lateral=0;enemy_wind=0;next_enemy=t+1.0;player_cd=t+.5;hp=100;
+            if(fight_no>17){int rating=80+ground_wins*5;if(rating>100)rating=100;const char *kind=ground_wins>=3?"FINISHER":(ground_wins==0?"STRIKER":"BALANCED STRIKER / FINISHER");snprintf(message,sizeof message,"%s rates you %d/100 — %s. SERIES BONUS +$%ld",opponents[rank-1],rating,kind,last_reward);if(rank==15){rank=16;break;}rank++;fight_no=1;wins=0;damage_to_enemy=0;ground_unlocked=0;ground_wins=0;}else snprintf(message,sizeof message,"BOUT WON +$%ld — fight %d/17, wins %d, losses %d.",last_reward,fight_no,wins,losses);
         }
         if(hp<=0){losses++;total_losses++;if(!sudden_death_used&&total_wins>=11&&total_wins>total_losses){sudden_death_used=1;hp=25;ehp=100;snprintf(message,sizeof message,"SUDDEN DEATH! Eligible: 11+ wins and ahead.");}else{running=0;snprintf(message,sizeof message,"KNOCKOUT — Sudden Death requires 11+ wins and a winning record.");}}
     }
     printf("\033[0m\033[?25h\n%s\n",hp<=0?"Campaign over — you were defeated.":rank>15?"FIGHTER GUILD COMPLETE — all 15 opponents, 17 fights each!":"Campaign abandoned."); printf("%s\n",message);
+    bay_profile_save(&prof);
+    printf("Wallet: $%ld  Hair: %s\n",prof.money,bay_hair_styles[prof.equipped].name);
     printf("Military Martial Arts Law: arms broken dealt %d, taken %d.\n",arms_dealt,arms_taken);
     bayeishuui_save_run_config(now_s()-session_start,rank>15,ai_mode,total_wins,total_losses);
     return 0;

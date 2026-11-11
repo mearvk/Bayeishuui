@@ -162,6 +162,16 @@ the sprite, but legs stay full strength: with both arms broken you fight on with
 teeps and round kicks. Injuries clear between bouts. Full rules:
 [MILITARY_MARTIAL_ARTS_LAW.md](MILITARY_MARTIAL_ARTS_LAW.md).
 
+## Hair styles and the Barber Shop
+
+![Hair styles](images/hair-styles.png)
+
+Win bouts, earn in-game money, and spend it at the Barber Shop (press **H**):
+**The Man** for $2000, a **Punk** mohawk for $4500, plus The Lover, Topknot,
+Afro, Dragon Braid and Legend Mane. Every owned style can be **Dyed** ($500) and
+given a shimmering **Glow** ($1500). Cosmetic only; saved between runs. Details:
+[HAIR_STYLES.md](HAIR_STYLES.md).
+
 ## Fighting styles
 
 Muay Thai is the foundation of the native campaign: guard, teep, round kick, punches, knees and close-range elbows. Each of the 15 Fighter Guild opponents has an individual tactical style, displayed in the HUD and reflected in movement, pressure, timing or attack range. Use **Space** for straight/close-range strikes, **R** for a teep, and **E** for a round kick.
@@ -178,6 +188,7 @@ See the complete roster in [source/README.md](source/README.md).
 | Space | Strike |
 | G | Guard |
 | B | Arm lock — break an arm (see [Military Martial Arts Law](MILITARY_MARTIAL_ARTS_LAW.md)) |
+| H | Barber Shop — buy and upgrade hair styles (see [Hair Styles](HAIR_STYLES.md)) |
 | J | Build ground control |
 | K | Ground-and-pound |
 | L | Attempt submission after building control |
@@ -210,6 +221,8 @@ quietly. It never fails the build.
 - `source/bayeishuui.cpp` — native C++17 terminal game.
 - `source/bayeishuui_sprites.h` — shared terminal sprite engine.
 - `source/bayeishuui_law.h` — Military Martial Arts Law rules (arm breaks), shared by C and C++.
+- `source/bayeishuui_hair.h` / `source/bayeishuui_barber.h` — hair styles, wallet, saved profile and the Barber Shop.
+- `HAIR_STYLES.md` — the style catalog, upgrades, prices and earning rules.
 - `MILITARY_MARTIAL_ARTS_LAW.md` — the Articles, odds and effects of arm breaks.
 - `source/bayeishuui_ai.py` — optional Python companion: engine-neutral Player 1 AI reference module.
 - `source/AI_PLAYER_API.md` — AI state schema and engine integration contract.

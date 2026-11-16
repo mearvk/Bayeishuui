@@ -43,8 +43,13 @@
 #endif
 
 /* Headroom above the top glyph row so tall hair (mohawk, pompadour, topknot)
- * is never clipped. */
-#define BAY_PX_PAD_TOP (BAY_PX_CELL_H / 2)
+ * is never clipped. BAY_PX_JOE_HEADROOM is extra room for Joe Biden, who is 14%
+ * taller and wears a cowboy hat; the image is drawn BAY_PX_JOE_ROWS terminal
+ * rows higher (assuming a terminal row is CELL_H/2 pixels) so every fighter
+ * keeps its on-screen position. */
+#define BAY_PX_JOE_HEADROOM BAY_PX_CELL_H
+#define BAY_PX_JOE_ROWS (BAY_PX_JOE_HEADROOM / (BAY_PX_CELL_H / 2))
+#define BAY_PX_PAD_TOP (BAY_PX_CELL_H / 2 + BAY_PX_JOE_HEADROOM)
 
 #define BAY_PX_W (BAY_SPRITE_W * BAY_PX_CELL_W)                      /* wide  */
 #define BAY_PX_H (BAY_SPRITE_H * BAY_PX_CELL_H + BAY_PX_PAD_TOP)     /* tall  */
@@ -326,12 +331,66 @@ static inline void bay_px_hair_front(BayRGBA *fb, int sel, double hx, double hy,
     }
 }
 
+/* Soft, translucent smoke puff (alpha-blended disc). */
+static inline void bay_px_puff(BayRGBA *fb, double cx, double cy, double rad, unsigned char alpha) {
+    for (int y = (int)(cy - rad - 1); y <= (int)(cy + rad + 1); ++y)
+        for (int x = (int)(cx - rad - 1); x <= (int)(cx + rad + 1); ++x) {
+            double dx = x + 0.5 - cx, dy = y + 0.5 - cy;
+            double d = __builtin_sqrt(dx*dx + dy*dy) / rad;
+            if (d >= 1.0) continue;
+            bay_px_set(fb, x, y, 205, 208, 215, (unsigned char)((1.0 - d) * alpha));
+        }
+}
+
+/* Joe Biden's head: white skin, white hair at the temples, aviators, a
+ * red cowboy hat, and a cigarette (with smoke) while he is smoking. */
+static inline void bay_px_joe_head(BayRGBA *fb, double hx, double hy, double hr,
+                                   unsigned char kr, unsigned char kg, unsigned char kb) {
+    /* white hair tufts behind and beside the head, under the hat brim */
+    bay_px_disc(fb, hx - hr*0.92, hy - hr*0.05, hr*0.34, 238,238,242);
+    bay_px_disc(fb, hx + hr*0.92, hy - hr*0.05, hr*0.30, 232,232,238);
+    bay_px_sphere(fb, hx, hy, hr, kr,kg,kb);
+    /* aviator sunglasses: two gold-rimmed dark lenses and a bridge */
+    bay_px_disc(fb, hx + hr*0.22, hy - hr*0.02, hr*0.33, 212,170,60);
+    bay_px_disc(fb, hx + hr*0.70, hy - hr*0.02, hr*0.30, 212,170,60);
+    bay_px_disc(fb, hx + hr*0.22, hy - hr*0.02, hr*0.26, 22,24,34);
+    bay_px_disc(fb, hx + hr*0.70, hy - hr*0.02, hr*0.23, 22,24,34);
+    bay_px_capsule(fb, hx + hr*0.40, hy - hr*0.10, hx + hr*0.55, hy - hr*0.10, hr*0.05, 212,170,60);
+    /* wide smile */
+    bay_px_capsule(fb, hx + hr*0.15, hy + hr*0.52, hx + hr*0.75, hy + hr*0.50, hr*0.07, 150,60,60);
+    /* red cowboy hat: upturned brim, rounded crown, dark band, gold star */
+    const unsigned char hr_r = 205, hr_g = 28, hr_b = 38;
+    bay_px_capsule_shaded(fb, hx - hr*1.50, hy - hr*0.66, hx + hr*1.50, hy - hr*0.66, hr*0.20, hr_r,hr_g,hr_b);
+    bay_px_capsule_shaded(fb, hx - hr*1.50, hy - hr*0.66, hx - hr*1.78, hy - hr*0.98, hr*0.17, hr_r,hr_g,hr_b);
+    bay_px_capsule_shaded(fb, hx + hr*1.50, hy - hr*0.66, hx + hr*1.78, hy - hr*0.98, hr*0.17, hr_r,hr_g,hr_b);
+    bay_px_capsule_shaded(fb, hx - hr*0.42, hy - hr*1.10, hx + hr*0.42, hy - hr*1.10, hr*0.58, hr_r,hr_g,hr_b);
+    bay_px_capsule(fb, hx - hr*0.45, hy - hr*1.72, hx + hr*0.45, hy - hr*1.72, hr*0.07, 140,14,26);   /* crown crease */
+    bay_px_capsule(fb, hx - hr*0.98, hy - hr*0.80, hx + hr*0.98, hy - hr*0.80, hr*0.13, 55,18,22);     /* hat band */
+    bay_px_disc(fb, hx + hr*0.05, hy - hr*0.80, hr*0.12, 235,195,70);                                /* gold star */
+    if (bay_joe.smoking) {
+        double mx = hx + hr*0.62, my = hy + hr*0.62;                /* corner of the mouth */
+        double tx = hx + hr*1.75, ty = hy + hr*0.52;                /* lit end */
+        bay_px_capsule(fb, mx, my, tx, ty, hr*0.10, 242,242,236);
+        bay_px_capsule(fb, tx - hr*0.22, ty + hr*0.01, tx, ty, hr*0.10, 215,160,95);   /* filter band */
+        bay_px_disc(fb, tx + hr*0.04, ty, hr*0.13, 255,110,35);                         /* ember */
+        bay_px_disc(fb, tx + hr*0.04, ty, hr*0.06, 255,215,120);
+        for (int k = 0; k < 5; ++k) {                               /* rising smoke */
+            double rise = ((bay_hair_phase * 2 + k * 24) % 120) / 120.0;
+            double sway = __builtin_sin(bay_hair_phase * 0.12 + k * 1.3) * hr*0.35;
+            bay_px_puff(fb, tx + sway + rise*hr*0.4, ty - hr*0.2 - rise*hr*2.6,
+                        hr*(0.16 + 0.34*rise), (unsigned char)(150 * (1.0 - rise)));
+        }
+    }
+}
+
 /* Rasterize the interpolated skeleton (joint coords in sprite-grid units)
  * into the RGBA framebuffer at BAY_PX_CELL scale. */
 static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
                                     int style_id) {
+    int joe = !player && bay_joe.active;   /* Joe Biden, the White Belt wildcard */
     unsigned char br, bg, bb;              /* body colour */
-    if (player) { br = 90; bg = 220; bb = 255; }
+    if (joe) { br = 250; bg = 228; bb = 214; }   /* white skin */
+    else if (player) { br = 90; bg = 220; bb = 255; }
     else {
         static const unsigned char palette[15][3] = {
             {255,170,105},{245,130,95},{125,220,255},{255,190,100},{190,150,255},
@@ -356,7 +415,8 @@ static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
         {40,120,60},{40,80,170},{200,50,120},{60,60,160},{40,50,120}
     };
     unsigned char gr, gg, gb, sr, sg, sb;
-    if (player) { gr=235; gg=235; gb=235;  sr=40; sg=90; sb=235; }   /* white gloves, blue trunks */
+    if (joe) { gr=205; gg=218; gb=245;  sr=28; sg=48; sb=135; }      /* pale-blue gloves, navy trunks */
+    else if (player) { gr=235; gg=235; gb=235;  sr=40; sg=90; sb=235; }   /* white gloves, blue trunks */
     else { gr=glove_pal[sid][0]; gg=glove_pal[sid][1]; gb=glove_pal[sid][2];
            sr=short_pal[sid][0]; sg=short_pal[sid][1]; sb=short_pal[sid][2]; }
     /* (silhouette outline colour reserved for a future pass) */
@@ -364,10 +424,28 @@ static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
     unsigned char kr = bay_px_clampc(224 + (br-180)*0.08);
     unsigned char kg = bay_px_clampc(176 + (bg-180)*0.08);
     unsigned char kb = bay_px_clampc(150 + (bb-180)*0.08);
+    if (joe) { kr = 252; kg = 232; kb = 221; }   /* white skin */
 
     /* map grid coords -> device pixels (centre of each cell) */
-    #define PX(i) ((v[(i)] + 0.5) * BAY_PX_CELL_W)
-    #define PY(i) ((v[(i)] + 0.5) * BAY_PX_CELL_H + BAY_PX_PAD_TOP)
+    double jp[24];
+    for (int i = 0; i < 24; i += 2) {
+        jp[i]     = (v[i]     + 0.5) * BAY_PX_CELL_W;
+        jp[i + 1] = (v[i + 1] + 0.5) * BAY_PX_CELL_H + BAY_PX_PAD_TOP;
+    }
+    if (joe) {
+        /* 14% taller: stretch standing poses upward from the feet; a fighter
+         * lying down (head low) is made 14% longer along the floor instead. */
+        double k = BAY_JOE_HEIGHT_PCT / 100.0;
+        if (v[1] < 3) {
+            double base = jp[19] > jp[23] ? jp[19] : jp[23];
+            for (int i = 1; i < 24; i += 2) jp[i] = base - (base - jp[i]) * k;
+        } else {
+            double hipx = jp[14];
+            for (int i = 0; i < 24; i += 2) jp[i] = hipx + (jp[i] - hipx) * k;
+        }
+    }
+    #define PX(i) (jp[(i)])
+    #define PY(i) (jp[(i)])
     double limb  = BAY_PX_CELL_W * 0.40;   /* arm/leg half-thickness */
     double thigh = BAY_PX_CELL_W * 0.48;   /* legs are a touch thicker */
     double torso = BAY_PX_CELL_W * 0.62;   /* chest mass */
@@ -383,9 +461,13 @@ static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
     bay_px_capsule_shaded(fb, PX(20),PY(21), PX(22),PY(23), limb,  br,bg,bb);
 
     /* spine + chest mass */
-    bay_px_capsule_shaded(fb, PX(2),PY(3), PX(14),PY(15), torso, br,bg,bb);
-    /* shoulders / collar line */
-    bay_px_capsule_shaded(fb, PX(2),PY(3), PX(4),PY(5), torso*0.8, br,bg,bb);
+    {
+        /* Joe wears a white singlet over his white skin. */
+        unsigned char tr = joe ? 246 : br, tg = joe ? 246 : bg, tb = joe ? 250 : bb;
+        bay_px_capsule_shaded(fb, PX(2),PY(3), PX(14),PY(15), torso, tr,tg,tb);
+        /* shoulders / collar line */
+        bay_px_capsule_shaded(fb, PX(2),PY(3), PX(4),PY(5), torso*0.8, tr,tg,tb);
+    }
 
     /* Muay Thai trunks: a bold coloured block over the hips with short legs
      * down each thigh and a white waistband trim on top, so the kit reads
@@ -400,6 +482,14 @@ static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
     bay_px_capsule(fb, PX(14)-hipw, PY(15)-BAY_PX_CELL_H*0.02,
                        PX(14)+hipw, PY(15)-BAY_PX_CELL_H*0.02,
                        BAY_PX_CELL_H*0.035, 240,240,245);
+    if (joe) {
+        /* White belt: a thick band round the waist, a knot and two tails. */
+        double by = PY(15) - BAY_PX_CELL_H*0.02;
+        bay_px_capsule_shaded(fb, PX(14)-hipw, by, PX(14)+hipw, by, BAY_PX_CELL_H*0.085, 248,248,250);
+        bay_px_sphere(fb, PX(14)+hipw*0.35, by, BAY_PX_CELL_H*0.11, 240,240,244);
+        bay_px_capsule_shaded(fb, PX(14)+hipw*0.35, by, PX(14)+hipw*0.15, by+BAY_PX_CELL_H*0.55, BAY_PX_CELL_H*0.05, 244,244,248);
+        bay_px_capsule_shaded(fb, PX(14)+hipw*0.35, by, PX(14)+hipw*0.62, by+BAY_PX_CELL_H*0.48, BAY_PX_CELL_H*0.05, 236,236,242);
+    }
 
     /* arms: shoulder->elbow->wrist (left then right) */
     bay_px_capsule_shaded(fb, PX(4),PY(5), PX(6),PY(7),   limb, br,bg,bb);
@@ -425,6 +515,9 @@ static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
 
     /* head: shaded skin sphere */
     double hx = PX(0), hy = PY(1), hr = BAY_PX_CELL_W*0.92;
+    if (joe) {
+        bay_px_joe_head(fb, hx, hy, hr, kr,kg,kb);
+    } else {
     int hsel = bay_hair_sel[player ? 1 : 0] % BAY_HAIR_COUNT, hlvl = bay_hair_lvl[player ? 1 : 0], hcr, hcg, hcb;
     if (hsel < 0) hsel = 0;
     bay_hair_color(hsel, hlvl, bay_hair_phase, &hcr, &hcg, &hcb);
@@ -449,6 +542,7 @@ static inline void bay_px_rasterize(BayRGBA *fb, const int *v, int player,
                    hr*0.14, gr,gg,gb);
     bay_px_capsule(fb, hx - hr*0.85, hy - hr*0.1, hx - hr*1.5, hy + hr*0.5,
                    hr*0.12, gr,gg,gb);
+    }
     #undef PX
     #undef PY
 }
@@ -621,8 +715,11 @@ static inline void bay_pixel_draw_backend(BayBackend backend,
                         ground_mode, style_id);          /* strike sweep */
     bay_px_rasterize(fb, v, player, style_id);           /* the fighter */
 
-    if (backend == BAY_BACKEND_KITTY) bay_kitty_emit(fb, x, y);
-    else                              bay_sixel_emit(fb, x, y);
+    /* The image carries BAY_PX_JOE_ROWS rows of extra headroom for Joe; lift it
+     * by that many rows so the fighter itself stays where it always was. */
+    int top_row = y - BAY_PX_JOE_ROWS < 1 ? 1 : y - BAY_PX_JOE_ROWS;
+    if (backend == BAY_BACKEND_KITTY) bay_kitty_emit(fb, x, top_row);
+    else                              bay_sixel_emit(fb, x, top_row);
     free(fb);
 }
 

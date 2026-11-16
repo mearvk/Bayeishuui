@@ -11,7 +11,9 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "bayeishuui_hair.h"
+#include "bayeishuui_joe.h"
 
 #define BAY_SPRITE_FRAME_COUNT 244
 #define BAY_SPRITE_POSE_COUNT 16
@@ -154,6 +156,51 @@ static inline void bay_sprite_skeleton(int v[24], int player, int style,
     }
 }
 
+/*
+ * Joe Biden (White Belt wildcard, see bayeishuui_joe.h). Glyph rendering:
+ * white skin, navy trunks, white belt, a red cowboy hat, and 14% extra height
+ * (one extra torso row on a 7-row sprite = 8/7). Feet stay on the same row.
+ */
+static inline void bay_sprite_draw_joe(char canvas[BAY_SPRITE_H][BAY_SPRITE_W + 1],
+                                       const int v[24], int x, int y,
+                                       int frame, int ground_mode) {
+    char out[BAY_SPRITE_H + 1][BAY_SPRITE_W + 1];
+    int rows = ground_mode ? BAY_SPRITE_H : BAY_SPRITE_H + 1;
+    for (int r = 0, s = 0; r < rows; ++r) {
+        memcpy(out[r], canvas[s], BAY_SPRITE_W + 1);
+        if (ground_mode || r != 3) ++s;               /* row 3 is drawn twice when standing */
+    }
+    int top = ground_mode ? y : y - 1;
+    int hiprow = (ground_mode || v[15] < 3) ? v[15] : v[15] + 1;
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < BAY_SPRITE_W; ++c) {
+            if (out[r][c] == ' ') continue;
+            if (r < hiprow || ground_mode) printf("\033[1;38;2;255;238;225m");
+            else printf("\033[1;38;2;80;110;230m");
+            printf("\033[%d;%dH%c", top + r, x + c, out[r][c]);
+        }
+    }
+    /* white belt */
+    printf("\033[1;38;2;255;255;255m");
+    for (int c = v[14] - 1; c <= v[14] + 1; ++c)
+        if (c >= 0 && c < BAY_SPRITE_W) printf("\033[%d;%dH═", top + hiprow, x + c);
+    /* red cowboy hat: crown above, brim resting on the head */
+    int hr = top + v[1];
+    if (hr - 2 >= 1) {
+        printf("\033[1;38;2;215;30;40m\033[%d;%dH▄█▄", hr - 2, x + v[0] - 1);
+        printf("\033[38;2;170;20;30m\033[%d;%dH▂▂▂▂▂", hr - 1, x + v[0] - 2);
+    }
+    /* cigarette with ember, and curling smoke while it burns */
+    if (bay_joe.smoking) {
+        printf("\033[1;38;2;240;240;235m\033[%d;%dH-", hr, x + v[0] + 1);
+        printf("\033[1;38;2;255;120;40m\033[%d;%dH*", hr, x + v[0] + 2);
+        printf("\033[38;2;190;195;205m");
+        if (hr - 1 >= 1) printf("\033[%d;%dH%c", hr - 1, x + v[0] + 3 + (frame / 6) % 2, (frame / 4) % 2 ? '~' : ')');
+        if (hr - 2 >= 1) printf("\033[%d;%dH%c", hr - 2, x + v[0] + 4 - (frame / 6) % 2, (frame / 5) % 2 ? 'o' : '~');
+    }
+    printf("\033[0m");
+}
+
 /* Render a unique interpolated frame for each index in the 244-frame cycle. */
 static inline void bay_sprite_draw(int x, int y, int player, int style,
                                    int frame, int guarding, int striking,
@@ -178,6 +225,7 @@ static inline void bay_sprite_draw(int x, int y, int player, int style,
     static const char marks[15] = {'*','+','^','~','o','x','=','/','>','#','%','&','@','!','D'};
     if (!ground_mode) bay_sprite_plot(canvas, 5, 3, marks[style_id]);
     else bay_sprite_plot(canvas, 5, 4, marks[style_id]);
+    if (!player && bay_joe.active) { bay_sprite_draw_joe(canvas, v, x, y, frame, ground_mode); return; }
     bay_sprite_color(player, style);
     for (int row=0;row<BAY_SPRITE_H;++row) {
         printf("\033[%d;%dH",y+row,x);

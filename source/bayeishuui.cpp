@@ -57,10 +57,10 @@ void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStam
     std::cout<<"\033[2J\033[H"; fg(130,205,255);
     std::cout<<"  BAYEISHUUI  /  FIGHTER GUILD";fg(255,205,115);
     std::cout<<"  RANK "<<(rank<10?"0":"")<<rank<<"/15: "<<guildRanks[rank-1]<<"\n";
-    fg(220,225,235);std::cout<<"  OPPONENT: "<<opponents[rank-1]<<" | DISTANCE "<<static_cast<int>(gap*10)/10.0<<"m | FIGHT "<<fightNo<<"/17 | RECORD "<<wins<<"-"<<losses<<"\n";
-    fg(255,155,120);std::cout<<"  STYLE: "<<styles[rank-1]<<"\n";
-    fg(155,190,220);std::cout<<"  TACTIC: "<<styleNotes[rank-1]<<"\n";
-    bar("YOU HP",hp,14,70,220,255);bar("RIVAL HP",enemyHp,14,255,90,105);std::cout<<'\n';if(groundMode){fg(255,190,90);std::cout<<"  GROUND GAME: J control | K ground-and-pound | L submission\n";}else{fg(155,190,220);std::cout<<"  STRIKING: Space punch | R teep | E round kick | G guard\n";}
+    fg(220,225,235);std::cout<<"  OPPONENT: "<<bay_joe_name_or(opponents[rank-1])<<(bay_joe.active?" (" BAY_JOE_RANK_TITLE ")":"")<<" | DISTANCE "<<static_cast<int>(gap*10)/10.0<<"m | FIGHT "<<fightNo<<"/17 | RECORD "<<wins<<"-"<<losses<<"\n";
+    fg(255,155,120);std::cout<<"  STYLE: "<<(bay_joe.active?BAY_JOE_STYLE:styles[rank-1])<<"\n";
+    fg(155,190,220);std::cout<<"  TACTIC: "<<(bay_joe.active?BAY_JOE_TACTIC:styleNotes[rank-1])<<"\n";
+    bar("YOU HP",hp,14,70,220,255);bar("RIVAL HP",enemyHp,14,255,90,105);if(bay_joe.active){fg(255,205,115);std::cout<<"JOE "<<bay_joe_hp_now(enemyHp)<<"/"<<BAY_JOE_MAX_HP<<" HP";}std::cout<<'\n';if(groundMode){fg(255,190,90);std::cout<<"  GROUND GAME: J control | K ground-and-pound | L submission\n";}else{fg(155,190,220);std::cout<<"  STRIKING: Space punch | R teep | E round kick | G guard\n";}
     bar("STAMINA",stamina,12,95,235,155);bar("RIVAL",enemyStamina,12,255,180,90);std::cout<<'\n';
     for(int y=0;y<scene;++y) {
         std::cout<<"\033["<<y+8<<";1H";
@@ -74,7 +74,8 @@ void render(int w,int h,double hp,double enemyHp,double stamina,double enemyStam
     }
     int ey=std::min(scene+1,4+horizon+1+static_cast<int>((6.0-gap)*.8));
     int py=std::max(4+scene-5,ey+3);
-    bay_pixel_draw_backend(g_backend,ex,ey,0,rank-1,frame,false,false,groundMode);bay_pixel_draw_backend(g_backend,px,py,1,0,frame,guarding,striking,groundMode);
+    bay_pixel_draw_backend(g_backend,ex,ey,0,bay_joe.active?0:rank-1,frame,false,false,groundMode);bay_pixel_draw_backend(g_backend,px,py,1,0,frame,guarding,striking,groundMode);
+    std::cout<<std::flush;bay_joe_draw_bubble(w,ex,ey,(g_backend==BAY_BACKEND_GLYPH||g_backend==BAY_BACKEND_UNKNOWN)?BAY_SPRITE_W:BAY_PX_W/(BAY_PX_CELL_W/2));fflush(stdout);
     fg(255,210,130);std::cout<<"\033["<<h-3<<";1H "<<(aiMode?"PERFECT FIGHTER: ":"")<<message<<std::flush;
     bay_law_draw_status(h-2);
     bay_hair_draw_hud(w);
@@ -93,7 +94,7 @@ int main() {
     std::atexit(restore);std::signal(SIGINT,stop);std::signal(SIGTERM,stop);g_backend=bay_detect_backend();std::cout<<"\033[?25l";
     double hp=100,enemyHp=100,stamina=100,enemyStamina=100,gap=3,last=seconds(),nextEnemy=0,playerCooldown=0,guardUntil=0,enemyWind=0;
     int lateral=0,frame=0,rank=1,fightNo=1,wins=0,losses=0,groundControl=0,groundWins=0;bool strike=false,guard=false,groundMode=false,groundUnlocked=false,suddenDeathUsed=false;int totalWins=0,totalLosses=0;double damageToEnemy=0,sessionStart=0,aiNextAction=0;bool aiMode=true;int armsDealt=0,armsTaken=0,boutArms=0;char lawMsg[200];long lastReward=0;BayProfile prof;bay_profile_load(&prof);
-#define BARBER_BREAK() do{double bt_=seconds();bay_barber_shop(&prof,g_backend,w,h,!aiMode);double el_=seconds()-bt_;nextEnemy+=el_;if(enemyWind>0)enemyWind+=el_;guardUntil+=el_;playerCooldown+=el_;aiNextAction+=el_;last=seconds();}while(0)
+#define BARBER_BREAK() do{double bt_=seconds();bay_barber_shop(&prof,g_backend,w,h,!aiMode);double el_=seconds()-bt_;nextEnemy+=el_;if(enemyWind>0)enemyWind+=el_;guardUntil+=el_;playerCooldown+=el_;aiNextAction+=el_;bay_joe_shift(el_);last=seconds();}while(0)
     std::string message="Double SPACE within 21 seconds for manual Player 1; otherwise Perfect Fighter.";
     std::cout<<"\033[2J\033[H\033[?25lBAYEISHUUI — PLAYER 1 SELECT\n\nDouble-tap SPACE within 21 seconds for manual play.\nOtherwise Perfect Fighter plays Player 1.\nPress ESC to cancel.\nMILITARY MARTIAL ARTS LAW IN FORCE: arms can break (B) - the bout fights on.\nPress H for the BARBER SHOP - hair styles from $800. Wallet: $"<<prof.money<<"\n"<<std::flush;
     double choiceStart=seconds(),lastSpace=-10.0;
@@ -101,7 +102,9 @@ int main() {
       std::cout<<"\033[8;1HStarting Perfect Fighter in "<<(21-static_cast<int>(seconds()-choiceStart))<<" seconds...  "<<std::flush;std::this_thread::sleep_for(std::chrono::milliseconds(50));}
     if(!running){std::cout<<"\nSession cancelled.\n";return 0;}sessionStart=seconds();last=sessionStart;
     message=aiMode?"PERFECT FIGHTER ACTIVE — live actions; ESC ends session.":"MANUAL PLAYER 1 — your controls are active.";
+    bay_joe_start_bout();
     while(running&&hp>0&&rank<=15) {
+        const int erank=bay_joe_rank_or(rank);
         bay_hair_sel[0]=bay_hair_rival_style(rank);bay_hair_lvl[0]=bay_hair_rival_level(rank);bay_hair_sel[1]=prof.equipped;bay_hair_lvl[1]=prof.level[prof.equipped];bay_hud_money=prof.money;
         double t=seconds(),dt=clamp(t-last,0,.12);last=t;strike=false;guard=t<guardUntil;
         if(keyReady()||aiMode){char k=0;bool gotKey=false;if(aiMode){if(keyReady()){char uk=0;ssize_t ur=::read(STDIN_FILENO,&uk,1);if(ur==1&&uk==27){running=false;message="ESCAPE — Perfect Fighter session ended.";}else if(ur==1&&(uk=='h'||uk=='H')){BARBER_BREAK();}}
@@ -121,15 +124,15 @@ int main() {
                 else if(stamina<BAY_LAW_BREAK_STAMINA)message="Too tired to lock an arm.";
                 else if(bay_injury_mask[0]==3)message="Both rival arms already broken - finish the fight.";
                 else{
-                    int chance=bay_law_break_chance(rank,groundControl,groundMode,enemyStamina);
+                    int chance=bay_law_break_chance(erank,groundControl,groundMode,enemyStamina);
                     stamina-=BAY_LAW_BREAK_STAMINA;playerCooldown=t+1.0;strike=true;
-                    if(std::rand()%100<chance){int arm=bay_law_pick_arm(bay_injury_mask[0],std::rand());bay_injury_mask[0]=static_cast<unsigned char>(bay_injury_mask[0]|arm);enemyHp=clamp(enemyHp-BAY_LAW_BREAK_DAMAGE,0,100);++armsDealt;++boutArms;
-                        std::snprintf(lawMsg,sizeof lawMsg,"CRACK! You break %s's %s arm! MMAL: the bout fights on.",opponents[rank-1],bay_law_arm_name(arm));message=lawMsg;}
+                    if(std::rand()%100<chance){int arm=bay_law_pick_arm(bay_injury_mask[0],std::rand());bay_injury_mask[0]=static_cast<unsigned char>(bay_injury_mask[0]|arm);enemyHp=clamp(enemyHp-bay_joe_snap_cost(BAY_LAW_BREAK_DAMAGE),0,100);++armsDealt;++boutArms;bay_joe_on_arm_snap(t);
+                        std::snprintf(lawMsg,sizeof lawMsg,"CRACK! You break %s's %s arm! MMAL: the bout fights on.",bay_joe_name_or(opponents[rank-1]),bay_law_arm_name(arm));message=lawMsg;}
                     else{std::snprintf(lawMsg,sizeof lawMsg,"Arm lock slips free (%d%% chance). Reset and try again.",chance);message=lawMsg;}
                 }
             }
             if(groundMode&&(k=='j'||k=='J')){++groundControl;message="Ground control: "+std::to_string(groundControl)+".";}
-            else if(groundMode&&(k=='k'||k=='K')&&t>=playerCooldown&&stamina>=10){int dmg=static_cast<int>((12+std::rand()%7)*bay_law_damage_scale(bay_injury_mask[1])+0.5);enemyHp=clamp(enemyHp-dmg,0,100);if(enemyHp<=0)++groundWins;stamina-=10;playerCooldown=t+.7;strike=true;message="GROUND AND POUND! "+std::to_string(dmg)+" damage.";}
+            else if(groundMode&&(k=='k'||k=='K')&&t>=playerCooldown&&stamina>=10){int dmg=static_cast<int>((12+std::rand()%7)*bay_law_damage_scale(bay_injury_mask[1])+0.5);enemyHp=clamp(enemyHp-bay_joe_dmg(dmg),0,100);if(enemyHp<=0)++groundWins;stamina-=10;playerCooldown=t+.7;strike=true;message="GROUND AND POUND! "+std::to_string(dmg)+" damage.";}
             else if(groundMode&&(k=='l'||k=='L')&&t>=playerCooldown&&groundControl>=2){if(std::rand()%100<35+groundControl*8){enemyHp=0;++groundWins;message="SUBMISSION! Bout finished.";}else{groundControl=0;playerCooldown=t+1.0;message="Submission defended; rebuild control.";}}
             else if(!groundMode&&k==' '&&!bay_law_can_punch(bay_injury_mask[1])){message="Both arms broken - fight on with teep (R) and round kick (E)!";}
             else if(!groundMode&&(k==' '||k=='e'||k=='E'||k=='r'||k=='R')&&t>=playerCooldown&&stamina>=13){
@@ -137,26 +140,27 @@ int main() {
                 int damage=(k=='r'||k=='R')?5:(k=='e'||k=='E')?11:8;
                 const char* technique=(k=='r'||k=='R')?"TEEP":(k=='e'||k=='E')?"ROUND KICK":"STRAIGHT / ELBOW";
                 stamina-=(k=='e'||k=='E')?19:(k=='r'||k=='R')?10:13;playerCooldown=t+((k=='e'||k=='E')?.78:.62);strike=true;
-                if(gap<=reach&&std::abs(lateral)<=2){int dealt=damage+std::rand()%5;if(k==' ')dealt=static_cast<int>(dealt*bay_law_damage_scale(bay_injury_mask[1])+0.5);enemyHp=clamp(enemyHp-dealt,0,100);damageToEnemy+=dealt;message=std::string(technique)+" lands — return to Muay Thai guard.";if(!groundUnlocked&&damageToEnemy>=150){groundUnlocked=true;groundMode=true;groundControl=0;message="150% STRIKING DAMAGE! GROUND GAME UNLOCKED: J control, K ground-and-pound, L submission.";}}
+                if(gap<=reach&&std::abs(lateral)<=2){int dealt=damage+std::rand()%5;if(k==' ')dealt=static_cast<int>(dealt*bay_law_damage_scale(bay_injury_mask[1])+0.5);enemyHp=clamp(enemyHp-bay_joe_dmg(dealt),0,100);damageToEnemy+=dealt;message=std::string(technique)+" lands — return to Muay Thai guard.";if(!groundUnlocked&&damageToEnemy>=150){groundUnlocked=true;groundMode=true;groundControl=0;message="150% STRIKING DAMAGE! GROUND GAME UNLOCKED: J control, K ground-and-pound, L submission.";}}
                 else message=std::string(technique)+" misses. Re-establish range.";
             }
         }}
         stamina=clamp(stamina+dt*(guard?3:9),0,100);enemyStamina=clamp(enemyStamina+dt*7,0,100);
+        if(bay_joe_tick(t)){groundMode=true;groundControl=2;std::snprintf(lawMsg,sizeof lawMsg,"%s falls over! GROUND AND POUND (K) - or submit him (L)!",BAY_JOE_NAME);message=lawMsg;}
         if(t>=nextEnemy&&gap<3.0){
-            double pace=(rank==1?1.0:(rank==2||rank==5||rank==7||rank==10?.72:(rank==3||rank==4||rank==8||rank==9||rank==11||rank==12||rank==13||rank==14?.9:.78)));
-            enemyWind=t+(rank==3||rank==4||rank==8||rank==12||rank==14?.58:.40);
-            nextEnemy=t+((1.65-rank*.055)*pace+(std::rand()%100)/100.0)*bay_law_enemy_tempo(bay_injury_mask[0]);
-            if(rank==2||rank==5||rank==6||rank==7)gap=clamp(gap-.035,.7,6.5);
-            if(rank==4||rank==8||rank==11||rank==14)lateral=(lateral==0?1:-lateral);
+            double pace=(erank==1?1.0:(erank==2||erank==5||erank==7||erank==10?.72:(erank==3||erank==4||erank==8||erank==9||erank==11||erank==12||erank==13||erank==14?.9:.78)));
+            enemyWind=t+(erank==3||erank==4||erank==8||erank==12||erank==14?.58:.40);
+            nextEnemy=t+((1.65-erank*.055)*pace+(std::rand()%100)/100.0)*bay_law_enemy_tempo(bay_injury_mask[0]);
+            if(erank==2||erank==5||erank==6||erank==7)gap=clamp(gap-.035,.7,6.5);
+            if(erank==4||erank==8||erank==11||erank==14)lateral=(lateral==0?1:-lateral);
         }
         if(enemyWind>0&&t>=enemyWind){
-            if(gap<=(rank==5||rank==6||rank==7?1.65:rank==9?2.7:2.1)&&std::abs(lateral)<=2){
-                int base=(rank==4||rank==11||rank==13?10:rank==5||rank==7?8:6);
-                if(guard){hp=clamp(hp-(1+rank/5)*bay_law_guard_penalty(bay_injury_mask[1]),0,100);message=std::string("CHECK / BLOCK! You absorb the ")+(rank%4==0?"straight punches":rank%4==1?"round kick":rank%4==2?"teep":"knee / elbow")+".";}
-                else {bool broke=false;hp=clamp(hp-static_cast<int>((base+rank/2+std::rand()%7)*bay_law_damage_scale(bay_injury_mask[0])+0.5),0,100);
-                    if(bay_injury_mask[1]!=3&&std::rand()%100<bay_law_enemy_break_chance(rank,stamina)){int arm=bay_law_pick_arm(bay_injury_mask[1],std::rand());bay_injury_mask[1]=static_cast<unsigned char>(bay_injury_mask[1]|arm);hp=clamp(hp-BAY_LAW_BREAK_DAMAGE/2,0,100);++armsTaken;broke=true;
-                        std::snprintf(lawMsg,sizeof lawMsg,"SNAP! %s breaks your %s arm! MMAL: FIGHT ON - your legs still work!",opponents[rank-1],bay_law_arm_name(arm));message=lawMsg;}
-                    if(!broke)message=std::string(opponents[rank-1])+" lands "+(rank%4==0?"straight punches":rank%4==1?"round kick":rank%4==2?"teep":"knee / elbow")+" — defend and counter.";}
+            if(gap<=(erank==5||erank==6||erank==7?1.65:erank==9?2.7:2.1)&&std::abs(lateral)<=2){
+                int base=(erank==4||erank==11||erank==13?10:erank==5||erank==7?8:6);
+                if(guard){hp=clamp(hp-(1+erank/5)*bay_law_guard_penalty(bay_injury_mask[1]),0,100);message=std::string("CHECK / BLOCK! You absorb the ")+(erank%4==0?"straight punches":erank%4==1?"round kick":erank%4==2?"teep":"knee / elbow")+".";}
+                else {bool broke=false;hp=clamp(hp-static_cast<int>((base+erank/2+std::rand()%7)*bay_law_damage_scale(bay_injury_mask[0])+0.5),0,100);
+                    if(bay_injury_mask[1]!=3&&std::rand()%100<bay_law_enemy_break_chance(erank,stamina)){int arm=bay_law_pick_arm(bay_injury_mask[1],std::rand());bay_injury_mask[1]=static_cast<unsigned char>(bay_injury_mask[1]|arm);hp=clamp(hp-BAY_LAW_BREAK_DAMAGE/2,0,100);++armsTaken;broke=true;
+                        std::snprintf(lawMsg,sizeof lawMsg,"SNAP! %s breaks your %s arm! MMAL: FIGHT ON - your legs still work!",bay_joe_name_or(opponents[rank-1]),bay_law_arm_name(arm));message=lawMsg;}
+                    if(!broke)message=std::string(bay_joe_name_or(opponents[rank-1]))+" lands "+(erank%4==0?"straight punches":erank%4==1?"round kick":erank%4==2?"teep":"knee / elbow")+" — defend and counter.";}
             }
             else message="The opponent's strike misses at this range.";
             enemyWind=0;
@@ -164,7 +168,7 @@ int main() {
         if(gap>2.0&&frame%4==0)gap=clamp(gap-.025,.7,6.5);
         render(w,h,hp,enemyHp,stamina,enemyStamina,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++,rank,fightNo,wins,losses,groundMode,aiMode);
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        if(enemyHp<=0){bay_injury_mask[0]=bay_injury_mask[1]=0;++wins;++totalWins;++fightNo;lastReward=bay_profile_bout_reward(rank,boutArms,fightNo>17);prof.money+=lastReward;if(prof.money>BAY_MONEY_CAP)prof.money=BAY_MONEY_CAP;boutArms=0;bay_profile_save(&prof);groundMode=groundUnlocked;groundControl=0;enemyHp=100;enemyStamina=100;stamina=100;gap=3.2;lateral=0;enemyWind=0;nextEnemy=t+1.0;playerCooldown=t+.5;hp=100;
+        if(enemyHp<=0){bay_injury_mask[0]=bay_injury_mask[1]=0;++wins;++totalWins;++fightNo;lastReward=bay_profile_bout_reward(rank,boutArms,fightNo>17);prof.money+=lastReward;if(prof.money>BAY_MONEY_CAP)prof.money=BAY_MONEY_CAP;boutArms=0;bay_profile_save(&prof);groundMode=groundUnlocked;groundControl=0;enemyHp=100;enemyStamina=100;stamina=100;gap=3.2;lateral=0;enemyWind=0;nextEnemy=t+1.0;playerCooldown=t+.5;hp=100;bay_joe_start_bout();
             if(fightNo>17){int rating=80+groundWins*5;if(rating>100)rating=100;const char* kind=groundWins>=3?"FINISHER":(groundWins==0?"STRIKER":"BALANCED STRIKER / FINISHER");message=std::string(opponents[rank-1])+" rates you "+std::to_string(rating)+"/100 — "+kind+". SERIES BONUS +$"+std::to_string(lastReward);if(rank==15){rank=16;break;}++rank;fightNo=1;wins=0;damageToEnemy=0;groundUnlocked=false;groundWins=0;}else message="BOUT WON +$"+std::to_string(lastReward)+" — fight "+std::to_string(fightNo)+"/17, wins "+std::to_string(wins)+", losses "+std::to_string(losses)+".";
         }
         if(hp<=0){++losses;++totalLosses;if(!suddenDeathUsed&&totalWins>=11&&totalWins>totalLosses){suddenDeathUsed=true;hp=25;enemyHp=100;message="SUDDEN DEATH! Eligible: 11+ wins and ahead.";}else{running=false;message="KNOCKOUT — Sudden Death requires 11+ wins and a winning record.";}}

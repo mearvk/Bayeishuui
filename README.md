@@ -162,6 +162,20 @@ the sprite, but legs stay full strength: with both arms broken you fight on with
 teeps and round kicks. Injuries clear between bouts. Full rules:
 [MILITARY_MARTIAL_ARTS_LAW.md](MILITARY_MARTIAL_ARTS_LAW.md).
 
+## Wildcard fighter: Joe Biden (White Belt)
+
+A parody guest fighter. In **1 of every 4 bouts** Joe takes the rival slot ("the
+first fighter") in place of that bout's Guild opponent, and fights with White
+Belt (rank 1) tactics.
+
+- **1500 HP** (Guild fighters have 100). The rival bar stays a percentage and the HUD shows `JOE n/1500 HP`.
+- **Snapped arm = -750 HP.**
+- After an arm snap he smokes a cigarette for **1d6 + 8 seconds**, then **50%** of the time he falls over and the bout drops into the ground game (J/K/L). After a fall there is a **1 in 4** chance of a "You beftta!" speech bubble.
+- Comic bubbles: arm snaps trigger lines such as "Ow, You owe me Meanies!".
+- **14% taller** than every other fighter, white skin, red cowboy hat, aviators and a white belt, in both the glyph and the Kitty/Sixel renderers. Preview with `./build/bayeishuui-pixeldemo --joe [--smoke] --ppm=joe.ppm`.
+
+Rules live in [`source/bayeishuui_joe.h`](source/bayeishuui_joe.h); the sheet is [`fighters/joe_biden.sleela`](fighters/joe_biden.sleela).
+
 ## Hair styles and the Barber Shop
 
 ![Hair styles](images/hair-styles.png)
@@ -222,6 +236,7 @@ quietly. It never fails the build.
 - `source/bayeishuui.cpp` — native C++17 terminal game.
 - `source/bayeishuui_sprites.h` — shared terminal sprite engine.
 - `source/bayeishuui_law.h` — Military Martial Arts Law rules (arm breaks), shared by C and C++.
+- `source/bayeishuui_joe.h` — Joe Biden White Belt wildcard: entry odds, 1500 HP, cigarette/fall rules, speech bubbles.
 - `source/bayeishuui_hair.h` / `source/bayeishuui_barber.h` — hair styles, wallet, saved profile and the Barber Shop.
 - `HAIR_STYLES.md` — the style catalog, upgrades, prices and earning rules.
 - `MILITARY_MARTIAL_ARTS_LAW.md` — the Articles, odds and effects of arm breaks.

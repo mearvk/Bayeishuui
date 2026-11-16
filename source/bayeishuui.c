@@ -61,9 +61,9 @@ static void render(int w,int h,double hp,double ehp,double stamina,double estami
     bg(7,13,25); color(130,205,255);
     printf("  BAYEISHUUI  /  FIGHTER GUILD");
     color(255,205,115); printf("  RANK %02d/15: %s\n",rank,guild_ranks[rank-1]);
-    color(220,225,235); printf("  OPPONENT: %s | FIGHT %02d/17 | RECORD %d-%d\n  STYLE: %s\n",opponents[rank-1],fight_no,wins,losses,styles[rank-1]);
-    color(155,190,220); printf("  TACTIC: %s\n",style_notes[rank-1]);
-    bar("YOU HP",hp,14,70,220,255); bar("RIVAL HP",ehp,14,255,90,105); printf("\n");
+    color(220,225,235); printf("  OPPONENT: %s%s | FIGHT %02d/17 | RECORD %d-%d\n  STYLE: %s\n",bay_joe_name_or(opponents[rank-1]),bay_joe.active?" (" BAY_JOE_RANK_TITLE ")":"",fight_no,wins,losses,bay_joe.active?BAY_JOE_STYLE:styles[rank-1]);
+    color(155,190,220); printf("  TACTIC: %s\n",bay_joe.active?BAY_JOE_TACTIC:style_notes[rank-1]);
+    bar("YOU HP",hp,14,70,220,255); bar("RIVAL HP",ehp,14,255,90,105); if(bay_joe.active){color(255,205,115);printf("JOE %d/%d HP",bay_joe_hp_now(ehp),BAY_JOE_MAX_HP);} printf("\n");
     bar("STAMINA",stamina,12,95,235,155); bar("RIVAL",estamina,12,255,180,90); printf("\n"); if(ground_mode){color(255,190,90);printf("  GROUND GAME: J control | K ground-and-pound | L submission\n");}else{color(155,190,220);printf("  STRIKING: Space punch | R teep | E round kick | G guard\n");}
     int horizon=scene/3;
     for(int y=0;y<scene;y++){
@@ -81,7 +81,8 @@ static void render(int w,int h,double hp,double ehp,double stamina,double estami
     }
     int ey=4+horizon+1+(int)((6.0-gap)*0.8); if(ey>scene+1)ey=scene+1;
     int py=4+scene-5; if(py<ey+3)py=ey+3;
-    bay_pixel_draw_backend(g_backend,ex,ey,0,rank-1,frame,0,0,ground_mode); bay_pixel_draw_backend(g_backend,px,py,1,0,frame,guard,strike,ground_mode);
+    bay_pixel_draw_backend(g_backend,ex,ey,0,bay_joe.active?0:rank-1,frame,0,0,ground_mode); bay_pixel_draw_backend(g_backend,px,py,1,0,frame,guard,strike,ground_mode);
+    bay_joe_draw_bubble(w,ex,ey,g_backend==BAY_BACKEND_GLYPH||g_backend==BAY_BACKEND_UNKNOWN?BAY_SPRITE_W:BAY_PX_W/(BAY_PX_CELL_W/2));
     printf("\033[%d;1H",h-3); color(255,210,130); printf(" %s%s",ai_mode?"PERFECT FIGHTER: ":"",message);
     bay_law_draw_status(h-2);
     bay_hair_draw_hud(w);
@@ -104,7 +105,7 @@ int main(int argc,char **argv) {
     double hp=100,ehp=100,st=100,es=100,gap=3.0,last=now_s(),next_enemy=0,player_cd=0,guard_until=0,enemy_wind=0;
     int lateral=0,frame=0,strike=0,guard=0,rank=1,fight_no=1,wins=0,losses=0,ground_mode=0,ground_control=0,ground_wins=0,ground_unlocked=0,sudden_death_used=0,total_wins=0,total_losses=0;
     double damage_to_enemy=0,session_start=0,ai_next_action=0; int ai_mode=1,arms_dealt=0,arms_taken=0,bout_arms=0; long last_reward=0; BayProfile prof; bay_profile_load(&prof);
-#define BARBER_BREAK() do{double bt_=now_s();bay_barber_shop(&prof,g_backend,w,h,!ai_mode);double el_=now_s()-bt_;next_enemy+=el_;if(enemy_wind>0)enemy_wind+=el_;guard_until+=el_;player_cd+=el_;ai_next_action+=el_;last=now_s();}while(0)
+#define BARBER_BREAK() do{double bt_=now_s();bay_barber_shop(&prof,g_backend,w,h,!ai_mode);double el_=now_s()-bt_;next_enemy+=el_;if(enemy_wind>0)enemy_wind+=el_;guard_until+=el_;player_cd+=el_;ai_next_action+=el_;bay_joe_shift(el_);last=now_s();}while(0)
 
     char message[192]="Double SPACE within 21 seconds for manual Player 1; otherwise Perfect Fighter.";
     printf("\033[2J\033[H\033[?25lBAYEISHUUI — PLAYER 1 SELECT\n\nDouble-tap SPACE within 21 seconds for manual play.\nOtherwise Perfect Fighter plays Player 1.\nPress ESC to cancel.\nMILITARY MARTIAL ARTS LAW IN FORCE: arms can break (B) - the bout fights on.\nPress H for the BARBER SHOP - hair styles from $800. Wallet: $%ld\n",prof.money);fflush(stdout);
@@ -113,7 +114,9 @@ int main(int argc,char **argv) {
       printf("\033[8;1HStarting Perfect Fighter in %02d seconds...  ",21-(int)(now_s()-choice_start));fflush(stdout);struct timespec cp={0,50000000};nanosleep(&cp,NULL);}
     if(!running){printf("\nSession cancelled.\n");return 0;}session_start=now_s();last=session_start;
     snprintf(message,sizeof message,"%s",ai_mode?"PERFECT FIGHTER ACTIVE — live actions; ESC ends session.":"MANUAL PLAYER 1 — your controls are active.");
+    bay_joe_start_bout();
     while(running&&hp>0&&rank<=15){
+        int erank=bay_joe_rank_or(rank);
         double t=now_s(),dt=clampd(t-last,0,.12); last=t;
         bay_hair_sel[0]=bay_hair_rival_style(rank);bay_hair_lvl[0]=bay_hair_rival_level(rank);bay_hair_sel[1]=prof.equipped;bay_hair_lvl[1]=prof.level[prof.equipped];bay_hud_money=prof.money;
         strike=0; guard=t<guard_until;
@@ -134,15 +137,15 @@ int main(int argc,char **argv) {
                 else if(st<BAY_LAW_BREAK_STAMINA)snprintf(message,sizeof message,"Too tired to lock an arm.");
                 else if(bay_injury_mask[0]==3)snprintf(message,sizeof message,"Both rival arms already broken - finish the fight.");
                 else{
-                    int chance=bay_law_break_chance(rank,ground_control,ground_mode,es);
+                    int chance=bay_law_break_chance(erank,ground_control,ground_mode,es);
                     st-=BAY_LAW_BREAK_STAMINA;player_cd=t+1.0;strike=1;
-                    if(rand()%100<chance){int arm=bay_law_pick_arm(bay_injury_mask[0],rand());bay_injury_mask[0]=(unsigned char)(bay_injury_mask[0]|arm);ehp=clampd(ehp-BAY_LAW_BREAK_DAMAGE,0,100);arms_dealt++;bout_arms++;
-                        snprintf(message,sizeof message,"CRACK! You break %s's %s arm! MMAL: the bout fights on.",opponents[rank-1],bay_law_arm_name(arm));}
+                    if(rand()%100<chance){int arm=bay_law_pick_arm(bay_injury_mask[0],rand());bay_injury_mask[0]=(unsigned char)(bay_injury_mask[0]|arm);ehp=clampd(ehp-bay_joe_snap_cost(BAY_LAW_BREAK_DAMAGE),0,100);arms_dealt++;bout_arms++;bay_joe_on_arm_snap(t);
+                        snprintf(message,sizeof message,"CRACK! You break %s's %s arm! MMAL: the bout fights on.",bay_joe_name_or(opponents[rank-1]),bay_law_arm_name(arm));}
                     else snprintf(message,sizeof message,"Arm lock slips free (%d%% chance). Reset and try again.",chance);
                 }
             }
             if(ground_mode&&(k=='j'||k=='J')){ground_control++;snprintf(message,sizeof message,"Ground control: %d.",ground_control);}
-            else if(ground_mode&&(k=='k'||k=='K')&&t>=player_cd&&st>=10){int dmg=(int)((12+rand()%7)*bay_law_damage_scale(bay_injury_mask[1])+0.5);ehp=clampd(ehp-dmg,0,100);if(ehp<=0)ground_wins++;st-=10;player_cd=t+.7;strike=1;snprintf(message,sizeof message,"GROUND AND POUND! %d damage.",dmg);}
+            else if(ground_mode&&(k=='k'||k=='K')&&t>=player_cd&&st>=10){int dmg=(int)((12+rand()%7)*bay_law_damage_scale(bay_injury_mask[1])+0.5);ehp=clampd(ehp-bay_joe_dmg(dmg),0,100);if(ehp<=0)ground_wins++;st-=10;player_cd=t+.7;strike=1;snprintf(message,sizeof message,"GROUND AND POUND! %d damage.",dmg);}
             else if(ground_mode&&(k=='l'||k=='L')&&t>=player_cd&&ground_control>=2){if(rand()%100<35+ground_control*8){ehp=0;ground_wins++;snprintf(message,sizeof message,"SUBMISSION! Bout finished.");}else{ground_control=0;player_cd=t+1.0;snprintf(message,sizeof message,"Submission defended; rebuild control.");}}
             else if(!ground_mode&&k==' '&&!bay_law_can_punch(bay_injury_mask[1])){snprintf(message,sizeof message,"Both arms broken - fight on with teep (R) and round kick (E)!");}
             else if(!ground_mode&&(k==' '||k=='e'||k=='E'||k=='r'||k=='R')&&t>=player_cd&&st>=13){
@@ -150,26 +153,27 @@ int main(int argc,char **argv) {
                 int damage=(k=='r'||k=='R')?5:(k=='e'||k=='E')?11:8;
                 const char *technique=(k=='r'||k=='R')?"TEEP":(k=='e'||k=='E')?"ROUND KICK":"STRAIGHT / ELBOW";
                 st-=(k=='e'||k=='E')?19:(k=='r'||k=='R')?10:13; player_cd=t+((k=='e'||k=='E')?.78:.62);strike=1;
-                if(gap<=reach&&abs(lateral)<=2){int dealt=damage+(rand()%5);if(k==' ')dealt=(int)(dealt*bay_law_damage_scale(bay_injury_mask[1])+0.5);ehp=clampd(ehp-dealt,0,100);damage_to_enemy+=dealt;snprintf(message,sizeof message,"%s lands — return to Muay Thai guard.",technique);if(!ground_unlocked&&damage_to_enemy>=150){ground_unlocked=1;ground_mode=1;ground_control=0;snprintf(message,sizeof message,"150%% STRIKING DAMAGE! GROUND GAME UNLOCKED: J control, K ground-and-pound, L submission.");}}
+                if(gap<=reach&&abs(lateral)<=2){int dealt=damage+(rand()%5);if(k==' ')dealt=(int)(dealt*bay_law_damage_scale(bay_injury_mask[1])+0.5);ehp=clampd(ehp-bay_joe_dmg(dealt),0,100);damage_to_enemy+=dealt;snprintf(message,sizeof message,"%s lands — return to Muay Thai guard.",technique);if(!ground_unlocked&&damage_to_enemy>=150){ground_unlocked=1;ground_mode=1;ground_control=0;snprintf(message,sizeof message,"150%% STRIKING DAMAGE! GROUND GAME UNLOCKED: J control, K ground-and-pound, L submission.");}}
                 else snprintf(message,sizeof message,"%s misses. Re-establish range.",technique);
             }
         }}
         st=clampd(st+dt*(guard?3:9),0,100); es=clampd(es+dt*7,0,100);
+        if(bay_joe_tick(t)){ground_mode=1;ground_control=2;snprintf(message,sizeof message,"%s falls over! GROUND AND POUND (K) - or submit him (L)!",BAY_JOE_NAME);}
         if(t>=next_enemy&&gap<3.0){
-            double pace=(rank==1?1.0:(rank==2||rank==5||rank==7||rank==10?0.72:(rank==3||rank==4||rank==8||rank==9||rank==11||rank==12||rank==13||rank==14?0.9:0.78)));
-            enemy_wind=t+(rank==3||rank==4||rank==8||rank==12||rank==14?0.58:0.40);
-            next_enemy=t+((1.65-rank*0.055)*pace+(rand()%100)/100.0)*bay_law_enemy_tempo(bay_injury_mask[0]);
-            if(rank==2||rank==5||rank==6||rank==7) gap=clampd(gap-0.035,.7,6.5);
-            if(rank==4||rank==8||rank==11||rank==14) lateral=(lateral==0?1:-lateral);
+            double pace=(erank==1?1.0:(erank==2||erank==5||erank==7||erank==10?0.72:(erank==3||erank==4||erank==8||erank==9||erank==11||erank==12||erank==13||erank==14?0.9:0.78)));
+            enemy_wind=t+(erank==3||erank==4||erank==8||erank==12||erank==14?0.58:0.40);
+            next_enemy=t+((1.65-erank*0.055)*pace+(rand()%100)/100.0)*bay_law_enemy_tempo(bay_injury_mask[0]);
+            if(erank==2||erank==5||erank==6||erank==7) gap=clampd(gap-0.035,.7,6.5);
+            if(erank==4||erank==8||erank==11||erank==14) lateral=(lateral==0?1:-lateral);
         }
         if(enemy_wind>0&&t>=enemy_wind){
-            if(gap<=(rank==5||rank==6||rank==7?1.65:rank==9?2.7:2.1)&&abs(lateral)<=2){
-                int base=(rank==4||rank==11||rank==13?10:rank==5||rank==7?8:6);
-                if(guard){hp=clampd(hp-(1+rank/5)*bay_law_guard_penalty(bay_injury_mask[1]),0,100);snprintf(message,sizeof message,"CHECK / BLOCK! You absorb the %s.",rank%4==0?"straight punches":rank%4==1?"round kick":rank%4==2?"teep":"knee / elbow");}
-                else {int broke=0;hp=clampd(hp-(int)((base+rank/2+(rand()%7))*bay_law_damage_scale(bay_injury_mask[0])+0.5),0,100);
-                    if(bay_injury_mask[1]!=3&&rand()%100<bay_law_enemy_break_chance(rank,st)){int arm=bay_law_pick_arm(bay_injury_mask[1],rand());bay_injury_mask[1]=(unsigned char)(bay_injury_mask[1]|arm);hp=clampd(hp-BAY_LAW_BREAK_DAMAGE/2,0,100);arms_taken++;broke=1;
-                        snprintf(message,sizeof message,"SNAP! %s breaks your %s arm! MMAL: FIGHT ON - your legs still work!",opponents[rank-1],bay_law_arm_name(arm));}
-                    if(!broke)snprintf(message,sizeof message,"%s lands %s — defend and counter.",opponents[rank-1],rank%4==0?"straight punches":rank%4==1?"round kick":rank%4==2?"teep":"knee / elbow");}
+            if(gap<=(erank==5||erank==6||erank==7?1.65:erank==9?2.7:2.1)&&abs(lateral)<=2){
+                int base=(erank==4||erank==11||erank==13?10:erank==5||erank==7?8:6);
+                if(guard){hp=clampd(hp-(1+erank/5)*bay_law_guard_penalty(bay_injury_mask[1]),0,100);snprintf(message,sizeof message,"CHECK / BLOCK! You absorb the %s.",erank%4==0?"straight punches":erank%4==1?"round kick":erank%4==2?"teep":"knee / elbow");}
+                else {int broke=0;hp=clampd(hp-(int)((base+erank/2+(rand()%7))*bay_law_damage_scale(bay_injury_mask[0])+0.5),0,100);
+                    if(bay_injury_mask[1]!=3&&rand()%100<bay_law_enemy_break_chance(erank,st)){int arm=bay_law_pick_arm(bay_injury_mask[1],rand());bay_injury_mask[1]=(unsigned char)(bay_injury_mask[1]|arm);hp=clampd(hp-BAY_LAW_BREAK_DAMAGE/2,0,100);arms_taken++;broke=1;
+                        snprintf(message,sizeof message,"SNAP! %s breaks your %s arm! MMAL: FIGHT ON - your legs still work!",bay_joe_name_or(opponents[rank-1]),bay_law_arm_name(arm));}
+                    if(!broke)snprintf(message,sizeof message,"%s lands %s — defend and counter.",bay_joe_name_or(opponents[rank-1]),erank%4==0?"straight punches":erank%4==1?"round kick":erank%4==2?"teep":"knee / elbow");}
             }
             else snprintf(message,sizeof message,"The opponent's strike misses at this range.");
             enemy_wind=0;
@@ -177,7 +181,7 @@ int main(int argc,char **argv) {
         if(gap>2.0&&frame%4==0)gap=clampd(gap-.025,.7,6.5);
         render(w,h,hp,ehp,st,es,gap,w/2-3+lateral*2,w/2-2,guard,strike,message,frame++,rank,fight_no,wins,losses,ground_mode,ai_mode);
         struct timespec pause={0,50000000}; nanosleep(&pause,NULL);
-        if(ehp<=0){bay_injury_mask[0]=bay_injury_mask[1]=0;wins++;total_wins++;fight_no++;last_reward=bay_profile_bout_reward(rank,bout_arms,fight_no>17);prof.money+=last_reward;if(prof.money>BAY_MONEY_CAP)prof.money=BAY_MONEY_CAP;bout_arms=0;bay_profile_save(&prof);ground_mode=ground_unlocked;ground_control=0;ehp=100;es=100;st=100;gap=3.2;lateral=0;enemy_wind=0;next_enemy=t+1.0;player_cd=t+.5;hp=100;
+        if(ehp<=0){bay_injury_mask[0]=bay_injury_mask[1]=0;wins++;total_wins++;fight_no++;last_reward=bay_profile_bout_reward(rank,bout_arms,fight_no>17);prof.money+=last_reward;if(prof.money>BAY_MONEY_CAP)prof.money=BAY_MONEY_CAP;bout_arms=0;bay_profile_save(&prof);ground_mode=ground_unlocked;ground_control=0;ehp=100;es=100;st=100;gap=3.2;lateral=0;enemy_wind=0;next_enemy=t+1.0;player_cd=t+.5;hp=100;bay_joe_start_bout();
             if(fight_no>17){int rating=80+ground_wins*5;if(rating>100)rating=100;const char *kind=ground_wins>=3?"FINISHER":(ground_wins==0?"STRIKER":"BALANCED STRIKER / FINISHER");snprintf(message,sizeof message,"%s rates you %d/100 — %s. SERIES BONUS +$%ld",opponents[rank-1],rating,kind,last_reward);if(rank==15){rank=16;break;}rank++;fight_no=1;wins=0;damage_to_enemy=0;ground_unlocked=0;ground_wins=0;}else snprintf(message,sizeof message,"BOUT WON +$%ld — fight %d/17, wins %d, losses %d.",last_reward,fight_no,wins,losses);
         }
         if(hp<=0){losses++;total_losses++;if(!sudden_death_used&&total_wins>=11&&total_wins>total_losses){sudden_death_used=1;hp=25;ehp=100;snprintf(message,sizeof message,"SUDDEN DEATH! Eligible: 11+ wins and ahead.");}else{running=0;snprintf(message,sizeof message,"KNOCKOUT — Sudden Death requires 11+ wins and a winning record.");}}

@@ -1,0 +1,53 @@
+/*
+ * fighters/joe_biden.sleela
+ * Bayeishuui SLeeLa Character Sheet.
+ * Definition: "Joe Biden", the White Belt wildcard (parody guest fighter).
+ * Documents the stats and quirks implemented in source/bayeishuui_joe.h; the
+ * native games apply the rules there, so this sheet is the human-readable
+ * contract (the numeric fields below are read by fighter_sheet.h as usual).
+ */
+#sleela 2.1
+// Entry: in 1 of every 4 bouts Joe is the rival ("the first fighter").
+// Arm snap: -750 HP. Then a cigarette for 1d6 + 8 seconds; at the end there is a
+// 50% chance he falls over into the ground game, and a 1 in 4 chance of the
+// "You beftta!" bubble after he falls. 14% taller than every other fighter.
+// Look: white skin, red cowboy hat, white belt.
+class Fighter {
+  // ---- Identity ----
+  String name        = "Joe Biden";
+  String rankTitle   = "White Belt";
+  int    rank        = 1;
+  String style       = "White Belt Brawler (talks a lot, in a red cowboy hat)";
+  String tactic      = "Soaks up punishment; lights up after an arm snap.";
+
+  // ---- Vitals ----
+  int    health      = 1500;
+  int    stamina     = 100;
+
+  // ---- Striking profile (White Belt tactics) ----
+  int    reach       = 210;            // 2.10 m
+  int    baseDamage  = 6;
+  int    windupMs    = 400;
+  int    paceCentis  = 100;
+
+  // ---- Behaviour ----
+  int    aggression  = 40;
+  int    lateral     = 20;
+
+  // ---- Identity colour (white skin) ----
+  int    colorR      = 252;
+  int    colorG      = 232;
+  int    colorB      = 221;
+
+  // ---- Joe-only quirks ----
+  int    armSnapDamage   = 750;
+  int    heightPercent   = 114;
+  int    entryOneIn      = 4;
+  int    smokeBaseSeconds = 8;         // plus 1d6
+  int    fallPercent     = 50;
+  int    tauntOneIn      = 4;
+
+  String getName()  { return name; }
+  int    getRank()  { return rank; }
+  String getStyle() { return style; }
+}

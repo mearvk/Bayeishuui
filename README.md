@@ -172,7 +172,7 @@ Belt (rank 1) tactics.
 - **Snapped arm = -750 HP.**
 - After an arm snap he smokes a cigarette for **1d6 + 8 seconds**, then **50%** of the time he falls over and the bout drops into the ground game (J/K/L). After a fall there is a **1 in 4** chance of a "You beftta!" speech bubble.
 - Comic bubbles: arm snaps trigger lines such as "Ow, You owe me Meanies!".
-- **14% taller** than every other fighter, white skin, red cowboy hat, aviators and a white belt, in both the glyph and the Kitty/Sixel renderers. Preview with `./build/bayeishuui-pixeldemo --joe [--smoke] --ppm=joe.ppm`.
+- **14% taller** than every other fighter, white skin, red cowboy hat (it turns **white for the rest of his career** the first time his arm is snapped; saved in the profile), aviators and a white belt, in both the glyph and the Kitty/Sixel renderers. Preview with `./build/bayeishuui-pixeldemo --joe [--smoke] --ppm=joe.ppm`.
 
 Rules live in [`source/bayeishuui_joe.h`](source/bayeishuui_joe.h); the sheet is [`fighters/joe_biden.sleela`](fighters/joe_biden.sleela).
 

@@ -187,8 +187,8 @@ static inline void bay_sprite_draw_joe(char canvas[BAY_SPRITE_H][BAY_SPRITE_W + 
     /* red cowboy hat: crown above, brim resting on the head */
     int hr = top + v[1];
     if (hr - 2 >= 1) {
-        printf("\033[1;38;2;215;30;40m\033[%d;%dH▄█▄", hr - 2, x + v[0] - 1);
-        printf("\033[38;2;170;20;30m\033[%d;%dH▂▂▂▂▂", hr - 1, x + v[0] - 2);
+        printf(bay_joe_white_hat ? "\033[1;38;2;250;250;250m\033[%d;%dH▄█▄" : "\033[1;38;2;215;30;40m\033[%d;%dH▄█▄", hr - 2, x + v[0] - 1);
+        printf(bay_joe_white_hat ? "\033[38;2;205;205;210m\033[%d;%dH▂▂▂▂▂" : "\033[38;2;170;20;30m\033[%d;%dH▂▂▂▂▂", hr - 1, x + v[0] - 2);
     }
     /* cigarette with ember, and curling smoke while it burns */
     if (bay_joe.smoking) {

@@ -21,8 +21,11 @@
  *             When it burns out there is a 50% chance he falls over, which
  *             puts the bout into the ground game (ground-and-pound). Once he
  *             is down there is a 1 in 4 chance of the "You beftta!" bubble.
- *   Look      White skin, red cowboy hat, white belt, 14% taller than every
- *             other fighter, comic speech bubbles.
+ *   Hat       Red until his first arm snaps. From that moment it is WHITE for
+ *             the rest of his career: the flag is kept in the saved profile
+ *             (joe_white_hat) and mirrored in bay_joe_white_hat below.
+ *   Look      White skin, red cowboy hat (white after the first snap), white
+ *             belt, 14% taller than every other fighter, comic speech bubbles.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -57,6 +60,10 @@ typedef struct BayJoe {
 
 /* Zero-initialised: Joe is not in the bout until bay_joe_start_bout() says so. */
 static BayJoe bay_joe;
+
+/* Career flag (survives bouts, unlike bay_joe): hat is white once set. The game
+ * loads it from the profile at start and saves it when it first becomes 1. */
+static int bay_joe_white_hat = 0;
 
 /* Pool of arm-snap lines. The first is the canonical one. */
 static inline const char *bay_joe_snap_line(int r) {
@@ -111,6 +118,7 @@ static inline double bay_joe_snap_cost(double guild_cost) {
 /* Called when an arm of the rival breaks. Lights the cigarette (1d6 + 8 s). */
 static inline void bay_joe_on_arm_snap(double now) {
     if (!bay_joe.active) return;
+    bay_joe_white_hat = 1;
     bay_joe_say(bay_joe_snap_line(rand()), now);
     if (bay_joe.snapped || bay_joe.fallen) return;      /* one cigarette per bout */
     bay_joe.snapped = 1;

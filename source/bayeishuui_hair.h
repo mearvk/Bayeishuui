@@ -84,6 +84,7 @@ typedef struct BayProfile {
     int  owned;                       /* bitmask over BAY_HAIR_COUNT styles */
     int  equipped;
     int  level[BAY_HAIR_COUNT];       /* upgrade tier per style */
+    int  joe_white_hat;               /* Joe Biden's hat is white for the rest of the career once his first arm snaps */
 } BayProfile;
 
 static inline void bay_profile_init(BayProfile *p) {
@@ -115,6 +116,7 @@ static inline int bay_profile_load(BayProfile *p) {
         else if (sscanf(line, "money=%ld", &v) == 1) q.money = v < 0 ? 0 : (v > BAY_MONEY_CAP ? BAY_MONEY_CAP : v);
         else if (sscanf(line, "owned=%ld", &v) == 1) q.owned = (int)(v & ((1 << BAY_HAIR_COUNT) - 1)) | 1;
         else if (sscanf(line, "equipped=%ld", &v) == 1) q.equipped = (int)v;
+        else if (sscanf(line, "joe_white_hat=%ld", &v) == 1) q.joe_white_hat = v != 0;
         else if (sscanf(line, "level%d=%ld", &i, &v) == 2 && i >= 0 && i < BAY_HAIR_COUNT)
             q.level[i] = v < 0 ? 0 : (v > BAY_HAIR_MAX_LEVEL ? BAY_HAIR_MAX_LEVEL : (int)v);
     }
@@ -133,6 +135,7 @@ static inline int bay_profile_save(const BayProfile *p) {
     if (!f) return 0;
     fprintf(f, "bayeishuui-profile-v1\nmoney=%ld\nowned=%d\nequipped=%d\n", p->money, p->owned, p->equipped);
     for (int i = 0; i < BAY_HAIR_COUNT; ++i) fprintf(f, "level%d=%d\n", i, p->level[i]);
+    fprintf(f, "joe_white_hat=%d\n", p->joe_white_hat ? 1 : 0);
     if (fclose(f) != 0) { remove(tmp); return 0; }
     if (rename(tmp, path) != 0) { remove(tmp); return 0; }
     return 1;

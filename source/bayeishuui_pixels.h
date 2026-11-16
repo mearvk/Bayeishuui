@@ -359,12 +359,14 @@ static inline void bay_px_joe_head(BayRGBA *fb, double hx, double hy, double hr,
     /* wide smile */
     bay_px_capsule(fb, hx + hr*0.15, hy + hr*0.52, hx + hr*0.75, hy + hr*0.50, hr*0.07, 150,60,60);
     /* red cowboy hat: upturned brim, rounded crown, dark band, gold star */
-    const unsigned char hr_r = 205, hr_g = 28, hr_b = 38;
+    /* red until his first arm snap, white for the rest of his career */
+    const unsigned char hr_r = bay_joe_white_hat ? 244 : 205, hr_g = bay_joe_white_hat ? 244 : 28, hr_b = bay_joe_white_hat ? 246 : 38;
+    const unsigned char cr_r = bay_joe_white_hat ? 170 : 140, cr_g = bay_joe_white_hat ? 170 : 14, cr_b = bay_joe_white_hat ? 176 : 26;
     bay_px_capsule_shaded(fb, hx - hr*1.50, hy - hr*0.66, hx + hr*1.50, hy - hr*0.66, hr*0.20, hr_r,hr_g,hr_b);
     bay_px_capsule_shaded(fb, hx - hr*1.50, hy - hr*0.66, hx - hr*1.78, hy - hr*0.98, hr*0.17, hr_r,hr_g,hr_b);
     bay_px_capsule_shaded(fb, hx + hr*1.50, hy - hr*0.66, hx + hr*1.78, hy - hr*0.98, hr*0.17, hr_r,hr_g,hr_b);
     bay_px_capsule_shaded(fb, hx - hr*0.42, hy - hr*1.10, hx + hr*0.42, hy - hr*1.10, hr*0.58, hr_r,hr_g,hr_b);
-    bay_px_capsule(fb, hx - hr*0.45, hy - hr*1.72, hx + hr*0.45, hy - hr*1.72, hr*0.07, 140,14,26);   /* crown crease */
+    bay_px_capsule(fb, hx - hr*0.45, hy - hr*1.72, hx + hr*0.45, hy - hr*1.72, hr*0.07, cr_r,cr_g,cr_b);   /* crown crease */
     bay_px_capsule(fb, hx - hr*0.98, hy - hr*0.80, hx + hr*0.98, hy - hr*0.80, hr*0.13, 55,18,22);     /* hat band */
     bay_px_disc(fb, hx + hr*0.05, hy - hr*0.80, hr*0.12, 235,195,70);                                /* gold star */
     if (bay_joe.smoking) {

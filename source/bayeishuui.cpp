@@ -93,7 +93,7 @@ int main() {
     if(tcsetattr(STDIN_FILENO,TCSAFLUSH,&raw)<0){perror("tcsetattr");return 2;}rawEnabled=true;
     std::atexit(restore);std::signal(SIGINT,stop);std::signal(SIGTERM,stop);g_backend=bay_detect_backend();std::cout<<"\033[?25l";
     double hp=100,enemyHp=100,stamina=100,enemyStamina=100,gap=3,last=seconds(),nextEnemy=0,playerCooldown=0,guardUntil=0,enemyWind=0;
-    int lateral=0,frame=0,rank=1,fightNo=1,wins=0,losses=0,groundControl=0,groundWins=0;bool strike=false,guard=false,groundMode=false,groundUnlocked=false,suddenDeathUsed=false;int totalWins=0,totalLosses=0;double damageToEnemy=0,sessionStart=0,aiNextAction=0;bool aiMode=true;int armsDealt=0,armsTaken=0,boutArms=0;char lawMsg[200];long lastReward=0;BayProfile prof;bay_profile_load(&prof);
+    int lateral=0,frame=0,rank=1,fightNo=1,wins=0,losses=0,groundControl=0,groundWins=0;bool strike=false,guard=false,groundMode=false,groundUnlocked=false,suddenDeathUsed=false;int totalWins=0,totalLosses=0;double damageToEnemy=0,sessionStart=0,aiNextAction=0;bool aiMode=true;int armsDealt=0,armsTaken=0,boutArms=0;char lawMsg[200];long lastReward=0;BayProfile prof;bay_profile_load(&prof);bay_joe_white_hat=prof.joe_white_hat;
 #define BARBER_BREAK() do{double bt_=seconds();bay_barber_shop(&prof,g_backend,w,h,!aiMode);double el_=seconds()-bt_;nextEnemy+=el_;if(enemyWind>0)enemyWind+=el_;guardUntil+=el_;playerCooldown+=el_;aiNextAction+=el_;bay_joe_shift(el_);last=seconds();}while(0)
     std::string message="Double SPACE within 21 seconds for manual Player 1; otherwise Perfect Fighter.";
     std::cout<<"\033[2J\033[H\033[?25lBAYEISHUUI — PLAYER 1 SELECT\n\nDouble-tap SPACE within 21 seconds for manual play.\nOtherwise Perfect Fighter plays Player 1.\nPress ESC to cancel.\nMILITARY MARTIAL ARTS LAW IN FORCE: arms can break (B) - the bout fights on.\nPress H for the BARBER SHOP - hair styles from $800. Wallet: $"<<prof.money<<"\n"<<std::flush;
@@ -126,7 +126,7 @@ int main() {
                 else{
                     int chance=bay_law_break_chance(erank,groundControl,groundMode,enemyStamina);
                     stamina-=BAY_LAW_BREAK_STAMINA;playerCooldown=t+1.0;strike=true;
-                    if(std::rand()%100<chance){int arm=bay_law_pick_arm(bay_injury_mask[0],std::rand());bay_injury_mask[0]=static_cast<unsigned char>(bay_injury_mask[0]|arm);enemyHp=clamp(enemyHp-bay_joe_snap_cost(BAY_LAW_BREAK_DAMAGE),0,100);++armsDealt;++boutArms;bay_joe_on_arm_snap(t);
+                    if(std::rand()%100<chance){int arm=bay_law_pick_arm(bay_injury_mask[0],std::rand());bay_injury_mask[0]=static_cast<unsigned char>(bay_injury_mask[0]|arm);enemyHp=clamp(enemyHp-bay_joe_snap_cost(BAY_LAW_BREAK_DAMAGE),0,100);++armsDealt;++boutArms;bay_joe_on_arm_snap(t);if(bay_joe_white_hat&&!prof.joe_white_hat){prof.joe_white_hat=1;bay_profile_save(&prof);}
                         std::snprintf(lawMsg,sizeof lawMsg,"CRACK! You break %s's %s arm! MMAL: the bout fights on.",bay_joe_name_or(opponents[rank-1]),bay_law_arm_name(arm));message=lawMsg;}
                     else{std::snprintf(lawMsg,sizeof lawMsg,"Arm lock slips free (%d%% chance). Reset and try again.",chance);message=lawMsg;}
                 }

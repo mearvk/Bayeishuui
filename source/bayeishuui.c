@@ -104,7 +104,7 @@ int main(int argc,char **argv) {
     printf("\033[?25l");
     double hp=100,ehp=100,st=100,es=100,gap=3.0,last=now_s(),next_enemy=0,player_cd=0,guard_until=0,enemy_wind=0;
     int lateral=0,frame=0,strike=0,guard=0,rank=1,fight_no=1,wins=0,losses=0,ground_mode=0,ground_control=0,ground_wins=0,ground_unlocked=0,sudden_death_used=0,total_wins=0,total_losses=0;
-    double damage_to_enemy=0,session_start=0,ai_next_action=0; int ai_mode=1,arms_dealt=0,arms_taken=0,bout_arms=0; long last_reward=0; BayProfile prof; bay_profile_load(&prof);
+    double damage_to_enemy=0,session_start=0,ai_next_action=0; int ai_mode=1,arms_dealt=0,arms_taken=0,bout_arms=0; long last_reward=0; BayProfile prof; bay_profile_load(&prof); bay_joe_white_hat=prof.joe_white_hat;
 #define BARBER_BREAK() do{double bt_=now_s();bay_barber_shop(&prof,g_backend,w,h,!ai_mode);double el_=now_s()-bt_;next_enemy+=el_;if(enemy_wind>0)enemy_wind+=el_;guard_until+=el_;player_cd+=el_;ai_next_action+=el_;bay_joe_shift(el_);last=now_s();}while(0)
 
     char message[192]="Double SPACE within 21 seconds for manual Player 1; otherwise Perfect Fighter.";
@@ -139,7 +139,7 @@ int main(int argc,char **argv) {
                 else{
                     int chance=bay_law_break_chance(erank,ground_control,ground_mode,es);
                     st-=BAY_LAW_BREAK_STAMINA;player_cd=t+1.0;strike=1;
-                    if(rand()%100<chance){int arm=bay_law_pick_arm(bay_injury_mask[0],rand());bay_injury_mask[0]=(unsigned char)(bay_injury_mask[0]|arm);ehp=clampd(ehp-bay_joe_snap_cost(BAY_LAW_BREAK_DAMAGE),0,100);arms_dealt++;bout_arms++;bay_joe_on_arm_snap(t);
+                    if(rand()%100<chance){int arm=bay_law_pick_arm(bay_injury_mask[0],rand());bay_injury_mask[0]=(unsigned char)(bay_injury_mask[0]|arm);ehp=clampd(ehp-bay_joe_snap_cost(BAY_LAW_BREAK_DAMAGE),0,100);arms_dealt++;bout_arms++;bay_joe_on_arm_snap(t);if(bay_joe_white_hat&&!prof.joe_white_hat){prof.joe_white_hat=1;bay_profile_save(&prof);}
                         snprintf(message,sizeof message,"CRACK! You break %s's %s arm! MMAL: the bout fights on.",bay_joe_name_or(opponents[rank-1]),bay_law_arm_name(arm));}
                     else snprintf(message,sizeof message,"Arm lock slips free (%d%% chance). Reset and try again.",chance);
                 }

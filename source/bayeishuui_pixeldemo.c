@@ -12,6 +12,7 @@
  *     --hair-level=N   hair upgrade tier 0 natural, 1 dyed, 2 glow
  *     --joe            render Joe Biden (White Belt wildcard) as the opponent
  *     --smoke          with --joe: show his lit cigarette and smoke
+ *     --white-hat      with --joe: the career white hat (after his first arm snap)
  *     --broken=N       Military Martial Arts Law injury: 1 left arm, 2 right, 3 both
  *     --ppm=FILE       also write the raw RGBA frame as a PPM image (for
  *                      verifying pixel output without a graphical terminal)
@@ -64,7 +65,7 @@ static void write_ppm(const char *path, int player, int style, int frame,
 int main(int argc, char **argv) {
     BayBackend backend = BAY_BACKEND_UNKNOWN;
     int style = 0, frame = 42, player = 0, guard = 0, strike = 0, ground = 0;
-    int frames = 1, broken = 0, hair = 0, hair_lvl = 0, joe = 0, smoke = 0;
+    int frames = 1, broken = 0, hair = 0, hair_lvl = 0, joe = 0, smoke = 0, white_hat = 0;
     const char *ppm = NULL, *forced = NULL;
 
     for (int i = 1; i < argc; ++i) {
@@ -79,6 +80,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--ground"))        ground = 1;
         else if (!strcmp(argv[i], "--joe"))           joe    = 1;
         else if (!strcmp(argv[i], "--smoke"))         smoke  = 1;
+        else if (!strcmp(argv[i], "--white-hat"))     white_hat = 1;
         else if (!strncmp(argv[i], "--broken=", 9))   broken = atoi(argv[i] + 9);
         else if (!strncmp(argv[i], "--hair=", 7))     hair = atoi(argv[i] + 7);
         else if (!strncmp(argv[i], "--hair-level=", 13)) hair_lvl = atoi(argv[i] + 13);
@@ -86,7 +88,7 @@ int main(int argc, char **argv) {
             fprintf(stderr,
               "bayeishuui-pixeldemo [--backend=auto|kitty|sixel|glyph] "
               "[--style=N] [--frame=N] [--frames=N] [--player] "
-              "[--guard|--strike|--ground] [--joe [--smoke]] [--broken=1|2|3] [--hair=0..7] [--hair-level=0..2] [--ppm=FILE]\n");
+              "[--guard|--strike|--ground] [--joe [--smoke] [--white-hat]] [--broken=1|2|3] [--hair=0..7] [--hair-level=0..2] [--ppm=FILE]\n");
             return 0;
         }
     }
@@ -100,7 +102,7 @@ int main(int argc, char **argv) {
         backend = bay_detect_backend();
     }
 
-    if (joe && !player) { bay_joe.active = 1; bay_joe.smoking = smoke; }
+    if (joe && !player) { bay_joe.active = 1; bay_joe.smoking = smoke; bay_joe_white_hat = white_hat; }
     bay_injury_mask[player ? 1 : 0] = (unsigned char)(broken & 3);
     bay_hair_sel[player ? 1 : 0] = (hair < 0 || hair >= BAY_HAIR_COUNT) ? 0 : hair;
     bay_hair_lvl[player ? 1 : 0] = (hair_lvl < 0 || hair_lvl > BAY_HAIR_MAX_LEVEL) ? 0 : hair_lvl;

@@ -39,6 +39,43 @@ From rank 3 up, a landed **unguarded** rival strike can also break one of your
 arms: `1 + rank*2/3`% (+6% for the rank 7 Clinch Controller, +6% if your stamina
 is below 25, max 20%). Guarding prevents it. Early opponents (ranks 1–2) never do.
 
+## Guest fighter: Joe Biden (White Belt wildcard)
+
+A parody guest fighter whose rules are layered on the Articles above. They live
+in [`source/bayeishuui_joe.h`](source/bayeishuui_joe.h) and the character sheet
+[`fighters/joe_biden.sleela`](fighters/joe_biden.sleela). Everything below applies
+only in a bout where Joe is the rival.
+
+| Rule | Detail |
+| --- | --- |
+| Entry | Each bout has a **1 in 4** chance that Joe takes the rival slot in place of that bout's Guild opponent. He fights with White Belt (rank 1) tactics, and your arm-lock odds use rank 1. The campaign record and rank progression are unchanged. |
+| Hit points | **1500 HP** (Guild fighters have 100). The rival bar is still a percentage; the HUD adds `JOE n/1500 HP`. Every point of damage you deal is converted at 100/1500. |
+| Snapped arm | An arm break costs Joe **750 HP** instead of 14. |
+| Cigarette | After his first arm snap in a bout he smokes for **1d6 + 8 seconds** (9–14 s). One cigarette per bout. |
+| Falling over | When the cigarette burns out there is a **50%** chance he falls: the bout enters the ground game with control already at 2 (`J` control, `K` ground-and-pound, `L` submission, `B` arm lock). |
+| Speech bubbles | Arm snaps show a line such as "Ow, You owe me Meanies!". After he falls there is a **1 in 4** chance of "You beftta!". Bubbles last 3.5 s and are drawn beside him. |
+| Hat | Red cowboy hat until his **first arm snap, ever**. From then on it is **white for the rest of his career**; the flag is saved in the profile (`joe_white_hat=1`). |
+| Size | **14% taller** than every other fighter (glyph and pixel renderers). White skin, white belt, aviators. |
+
+### The Deal for Joe (`zz`)
+
+1. Type **`zz`** (two `z` presses within 0.65 s) **within the first 2 seconds** of
+   a Joe bout. Later, outside a Joe bout, or a second time in the same bout, the
+   game only shows a refusal message.
+2. The bout pauses and the game offers **Ribs and Sauce or Steak and Potatoes** if
+   you agree that Joe is main and kosher. Answer **`y`** or **`n`**; there is no
+   time limit on the answer.
+3. Either way Joe's arm is fractured and he loses the usual **750 HP**, even if an
+   arm was already snapped (if both arms are already broken, only the HP is
+   lost). The fracture also lights the cigarette and turns the hat white, as for
+   any arm snap.
+4. On **`n`** he also loses **900 HP**. A full-health Joe has 1500 HP, so 750 + 900
+   knocks him out and ends the bout.
+5. Joe shouts "Bark" from his dialog bubble, then it is back to fighting.
+
+The Deal works in manual play and in Perfect Fighter mode (you type the `zz`; the
+auto-pilot never opens it on its own).
+
 ## Seeing it
 
 - The sprite hangs the broken arm limp from the shoulder. Both the glyph and the

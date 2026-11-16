@@ -11,9 +11,10 @@
 | Space | Strike | Initiate one straight punch when the fighter can act |
 | B | Arm lock | Attempt to break an arm at clinch range or from ground control; see MILITARY_MARTIAL_ARTS_LAW.md |
 | H | Barber Shop | Buy, upgrade and equip hair styles (cosmetic); the bout pauses while open. In the shop, T haggles and X trades in (manual players) |
+| zz | Deal for Joe | Two quick `z` presses in the first 2 seconds of a bout against Joe Biden; then answer `y` or `n`. See "Guest fighter: Joe Biden" in MILITARY_MARTIAL_ARTS_LAW.md |
 | Q | Quit | Leave the current bout |
 
-W/A/S/D and Space are the five primary gameplay controls. Q is a utility command to exit the terminal game, not a combat action.
+W/A/S/D and Space are the five primary gameplay controls. `zz` is a special-case command that does nothing outside a Joe bout. Q is a utility command to exit the terminal game, not a combat action.
 
 ## Combat rules
 
@@ -35,5 +36,6 @@ W/A/S/D and Space are the five primary gameplay controls. Q is a utility command
 - Out-of-range and poorly aligned strikes miss.
 - A clean strike reduces the target's health and applies a brief stun.
 - Guarding reduces damage.
+- In a bout against the guest fighter Joe Biden (1 in 4 bouts), rival hit points are 1500 instead of 100 and arm breaks, the cigarette/fall sequence and the Deal for Joe apply; see MILITARY_MARTIAL_ARTS_LAW.md.
 - Zero health ends the bout once and reports victory or defeat.
 - The terminal cursor and input mode are restored when the bout ends or the user quits.

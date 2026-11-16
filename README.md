@@ -174,6 +174,8 @@ Belt (rank 1) tactics.
 - Comic bubbles: arm snaps trigger lines such as "Ow, You owe me Meanies!".
 - **14% taller** than every other fighter, white skin, red cowboy hat (it turns **white for the rest of his career** the first time his arm is snapped; saved in the profile), aviators and a white belt, in both the glyph and the Kitty/Sixel renderers. Preview with `./build/bayeishuui-pixeldemo --joe [--smoke] --ppm=joe.ppm`.
 
+- **The Deal for Joe:** type **`zz`** (two quick z presses, within the first **2 seconds** of a Joe bout) to be offered *Ribs and Sauce or Steak and Potatoes* if you agree Joe is main and kosher. Answer **y** or **n** (the bout pauses). Either way Joe's arm is fractured (the usual 750 HP, even if an arm is already snapped); on **n** he also loses **900 HP**. Joe shouts "Bark" from his dialog bubble, then it is back to the fight. One deal per bout; works in manual and Perfect Fighter mode.
+
 Rules live in [`source/bayeishuui_joe.h`](source/bayeishuui_joe.h); the sheet is [`fighters/joe_biden.sleela`](fighters/joe_biden.sleela).
 
 ## Hair styles and the Barber Shop

@@ -31,6 +31,7 @@ void restore() {
     std::cout << "\033[0m\033[?25h\033[2J\033[H" << std::flush;
 }
 void stop(int) { running=false; }
+int joeAlive() { return running?1:0; }
 double clamp(double x,double lo,double hi) { return std::max(lo,std::min(x,hi)); }
 using Clock=std::chrono::steady_clock;
 double seconds() { return std::chrono::duration<double>(Clock::now().time_since_epoch()).count(); }
@@ -95,6 +96,10 @@ int main() {
     double hp=100,enemyHp=100,stamina=100,enemyStamina=100,gap=3,last=seconds(),nextEnemy=0,playerCooldown=0,guardUntil=0,enemyWind=0;
     int lateral=0,frame=0,rank=1,fightNo=1,wins=0,losses=0,groundControl=0,groundWins=0;bool strike=false,guard=false,groundMode=false,groundUnlocked=false,suddenDeathUsed=false;int totalWins=0,totalLosses=0;double damageToEnemy=0,sessionStart=0,aiNextAction=0;bool aiMode=true;int armsDealt=0,armsTaken=0,boutArms=0;char lawMsg[200];long lastReward=0;BayProfile prof;bay_profile_load(&prof);bay_joe_white_hat=prof.joe_white_hat;
 #define BARBER_BREAK() do{double bt_=seconds();bay_barber_shop(&prof,g_backend,w,h,!aiMode);double el_=seconds()-bt_;nextEnemy+=el_;if(enemyWind>0)enemyWind+=el_;guardUntil+=el_;playerCooldown+=el_;aiNextAction+=el_;bay_joe_shift(el_);last=seconds();}while(0)
+#define DEAL_KEY() do{int dc_=bay_joe_deal_key(t);if(dc_==BAY_JOE_DEAL_OPEN){double dt0_=seconds();int ans_=bay_joe_deal_prompt(joeAlive);double del_=seconds()-dt0_;nextEnemy+=del_;if(enemyWind>0)enemyWind+=del_;guardUntil+=del_;playerCooldown+=del_;aiNextAction+=del_;bay_joe_shift(del_);last=seconds();\
+  if(ans_<0)running=false;else{bay_joe.deal_done=1;int arm_=bay_law_pick_arm(bay_injury_mask[0],std::rand());if(arm_)bay_injury_mask[0]=static_cast<unsigned char>(bay_injury_mask[0]|arm_);enemyHp=clamp(enemyHp-bay_joe_deal_cost(ans_),0,100);bay_joe_on_arm_snap(last);bay_joe_say(BAY_JOE_BARK,last);if(bay_joe_white_hat&&!prof.joe_white_hat){prof.joe_white_hat=1;bay_profile_save(&prof);}\
+    if(ans_)message=std::string("DEAL! Joe is main and kosher - ")+((std::rand()&1)?"Ribs and Sauce":"Steak and Potatoes")+" served. His arm is fractured.";else message="NO DEAL! Joe loses "+std::to_string(BAY_JOE_DEAL_NO_HP)+" extra HP and his arm is fractured.";}}\
+  else if(dc_!=BAY_JOE_DEAL_NONE)message=bay_joe_deal_refusal(dc_);}while(0)
     std::string message="Double SPACE within 21 seconds for manual Player 1; otherwise Perfect Fighter.";
     std::cout<<"\033[2J\033[H\033[?25lBAYEISHUUI — PLAYER 1 SELECT\n\nDouble-tap SPACE within 21 seconds for manual play.\nOtherwise Perfect Fighter plays Player 1.\nPress ESC to cancel.\nMILITARY MARTIAL ARTS LAW IN FORCE: arms can break (B) - the bout fights on.\nPress H for the BARBER SHOP - hair styles from $800. Wallet: $"<<prof.money<<"\n"<<std::flush;
     double choiceStart=seconds(),lastSpace=-10.0;
@@ -107,12 +112,13 @@ int main() {
         const int erank=bay_joe_rank_or(rank);
         bay_hair_sel[0]=bay_hair_rival_style(rank);bay_hair_lvl[0]=bay_hair_rival_level(rank);bay_hair_sel[1]=prof.equipped;bay_hair_lvl[1]=prof.level[prof.equipped];bay_hud_money=prof.money;
         double t=seconds(),dt=clamp(t-last,0,.12);last=t;strike=false;guard=t<guardUntil;
-        if(keyReady()||aiMode){char k=0;bool gotKey=false;if(aiMode){if(keyReady()){char uk=0;ssize_t ur=::read(STDIN_FILENO,&uk,1);if(ur==1&&uk==27){running=false;message="ESCAPE — Perfect Fighter session ended.";}else if(ur==1&&(uk=='h'||uk=='H')){BARBER_BREAK();}}
+        if(keyReady()||aiMode){char k=0;bool gotKey=false;if(aiMode){if(keyReady()){char uk=0;ssize_t ur=::read(STDIN_FILENO,&uk,1);if(ur==1&&uk==27){running=false;message="ESCAPE — Perfect Fighter session ended.";}else if(ur==1&&(uk=='h'||uk=='H')){BARBER_BREAK();}else if(ur==1&&(uk=='z'||uk=='Z')){DEAL_KEY();}}
  if(running&&t>=aiNextAction){k=bay_law_ai_action(hp,stamina,gap,lateral,groundMode,groundControl,enemyHp,bay_injury_mask[0],enemyWind,t,playerCooldown);if(!k){k=bayeishuui_ai_action(hp,enemyHp,stamina,gap,lateral,groundMode,groundUnlocked,groundControl,enemyWind,t,playerCooldown);if(k==' '&&!bay_law_can_punch(bay_injury_mask[1]))k='r';}gotKey=(k!='\0');aiNextAction=t+.22;}}
  else if(::read(STDIN_FILENO,&k,1)==1)gotKey=true;
  if(gotKey){
             if(k=='q'||k=='Q')break;
             if(k=='h'||k=='H'){BARBER_BREAK();}
+            if(k=='z'||k=='Z'){DEAL_KEY();}
             if(k=='w'||k=='W'){gap=clamp(gap-.22,.7,6.5);message="You step in behind your guard.";}
             if(k=='s'||k=='S'){gap=clamp(gap+.25,.7,6.5);message="You create space.";}
             if(k=='a'||k=='A'){lateral=static_cast<int>(clamp(lateral-1,-3,3));message="You circle left.";}

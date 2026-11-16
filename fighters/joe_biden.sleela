@@ -11,6 +11,8 @@
 // Arm snap: -750 HP. Then a cigarette for 1d6 + 8 seconds; at the end there is a
 // 50% chance he falls over into the ground game, and a 1 in 4 chance of the
 // "You beftta!" bubble after he falls. 14% taller than every other fighter.
+// Deal: "zz" within 2 s offers ribs/steak if Joe is main and kosher (y/n): arm
+// fractured either way (750), plus 900 HP on n; Joe barks.
 // Look: white skin, red cowboy hat, white belt.
 class Fighter {
   // ---- Identity ----
@@ -18,7 +20,7 @@ class Fighter {
   String rankTitle   = "White Belt";
   int    rank        = 1;
   String style       = "White Belt Brawler (talks a lot, in a red cowboy hat)";
-  String tactic      = "Soaks up punishment; lights up after an arm snap.";
+  String tactic      = "Soaks up punishment; lights up after an arm snap. Type zz in 2s for the Deal.";
 
   // ---- Vitals ----
   int    health      = 1500;
@@ -46,6 +48,8 @@ class Fighter {
   int    smokeBaseSeconds = 8;         // plus 1d6
   int    fallPercent     = 50;
   int    tauntOneIn      = 4;
+  int    dealWindowSeconds = 2;        // type zz to open the Deal
+  int    dealNoDamage    = 900;        // extra HP lost on "n"
 
   String getName()  { return name; }
   int    getRank()  { return rank; }

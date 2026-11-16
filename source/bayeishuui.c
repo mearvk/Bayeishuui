@@ -29,6 +29,7 @@ static void restore(void) {
     fflush(stdout);
 }
 static void stop_signal(int sig) { (void)sig; running = 0; }
+static int joe_alive(void) { return running; }
 static double clampd(double x, double lo, double hi) { return x < lo ? lo : (x > hi ? hi : x); }
 static double now_s(void) { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); return t.tv_sec + t.tv_nsec / 1e9; }
 static int key_ready(void) {
@@ -106,6 +107,10 @@ int main(int argc,char **argv) {
     int lateral=0,frame=0,strike=0,guard=0,rank=1,fight_no=1,wins=0,losses=0,ground_mode=0,ground_control=0,ground_wins=0,ground_unlocked=0,sudden_death_used=0,total_wins=0,total_losses=0;
     double damage_to_enemy=0,session_start=0,ai_next_action=0; int ai_mode=1,arms_dealt=0,arms_taken=0,bout_arms=0; long last_reward=0; BayProfile prof; bay_profile_load(&prof); bay_joe_white_hat=prof.joe_white_hat;
 #define BARBER_BREAK() do{double bt_=now_s();bay_barber_shop(&prof,g_backend,w,h,!ai_mode);double el_=now_s()-bt_;next_enemy+=el_;if(enemy_wind>0)enemy_wind+=el_;guard_until+=el_;player_cd+=el_;ai_next_action+=el_;bay_joe_shift(el_);last=now_s();}while(0)
+#define DEAL_KEY() do{int dc_=bay_joe_deal_key(t);if(dc_==BAY_JOE_DEAL_OPEN){double dt0_=now_s();int ans_=bay_joe_deal_prompt(joe_alive);double del_=now_s()-dt0_;next_enemy+=del_;if(enemy_wind>0)enemy_wind+=del_;guard_until+=del_;player_cd+=del_;ai_next_action+=del_;bay_joe_shift(del_);last=now_s();\
+  if(ans_<0)running=0;else{bay_joe.deal_done=1;int arm_=bay_law_pick_arm(bay_injury_mask[0],rand());if(arm_)bay_injury_mask[0]=(unsigned char)(bay_injury_mask[0]|arm_);ehp=clampd(ehp-bay_joe_deal_cost(ans_),0,100);bay_joe_on_arm_snap(last);bay_joe_say(BAY_JOE_BARK,last);if(bay_joe_white_hat&&!prof.joe_white_hat){prof.joe_white_hat=1;bay_profile_save(&prof);}\
+    if(ans_)snprintf(message,sizeof message,"DEAL! Joe is main and kosher - %s served. His arm is fractured.",(rand()&1)?"Ribs and Sauce":"Steak and Potatoes");else snprintf(message,sizeof message,"NO DEAL! Joe loses %d extra HP and his arm is fractured.",BAY_JOE_DEAL_NO_HP);}}\
+  else if(dc_!=BAY_JOE_DEAL_NONE)snprintf(message,sizeof message,"%s",bay_joe_deal_refusal(dc_));}while(0)
 
     char message[192]="Double SPACE within 21 seconds for manual Player 1; otherwise Perfect Fighter.";
     printf("\033[2J\033[H\033[?25lBAYEISHUUI — PLAYER 1 SELECT\n\nDouble-tap SPACE within 21 seconds for manual play.\nOtherwise Perfect Fighter plays Player 1.\nPress ESC to cancel.\nMILITARY MARTIAL ARTS LAW IN FORCE: arms can break (B) - the bout fights on.\nPress H for the BARBER SHOP - hair styles from $800. Wallet: $%ld\n",prof.money);fflush(stdout);
@@ -120,12 +125,13 @@ int main(int argc,char **argv) {
         double t=now_s(),dt=clampd(t-last,0,.12); last=t;
         bay_hair_sel[0]=bay_hair_rival_style(rank);bay_hair_lvl[0]=bay_hair_rival_level(rank);bay_hair_sel[1]=prof.equipped;bay_hair_lvl[1]=prof.level[prof.equipped];bay_hud_money=prof.money;
         strike=0; guard=t<guard_until;
-        if(key_ready()||ai_mode){char k=0;int got_key=0;if(ai_mode){if(key_ready()){char uk=0;ssize_t ur=read(STDIN_FILENO,&uk,1);if(ur==1&&uk==27){running=0;snprintf(message,sizeof message,"ESCAPE — Perfect Fighter session ended.");}else if(ur==1&&(uk=='h'||uk=='H')){BARBER_BREAK();}}
+        if(key_ready()||ai_mode){char k=0;int got_key=0;if(ai_mode){if(key_ready()){char uk=0;ssize_t ur=read(STDIN_FILENO,&uk,1);if(ur==1&&uk==27){running=0;snprintf(message,sizeof message,"ESCAPE — Perfect Fighter session ended.");}else if(ur==1&&(uk=='h'||uk=='H')){BARBER_BREAK();}else if(ur==1&&(uk=='z'||uk=='Z')){DEAL_KEY();}}
  if(running&&t>=ai_next_action){k=bay_law_ai_action(hp,st,gap,lateral,ground_mode,ground_control,ehp,bay_injury_mask[0],enemy_wind,t,player_cd);if(!k){k=bayeishuui_ai_action(hp,ehp,st,gap,lateral,ground_mode,ground_unlocked,ground_control,enemy_wind,t,player_cd);if(k==' '&&!bay_law_can_punch(bay_injury_mask[1]))k='r';}got_key=(k!='\0');ai_next_action=t+0.22;}}
  else if(read(STDIN_FILENO,&k,1)==1)got_key=1;
  if(got_key){
             if(k=='q'||k=='Q')break;
             if(k=='h'||k=='H'){BARBER_BREAK();}
+            if(k=='z'||k=='Z'){DEAL_KEY();}
             if(k=='w'||k=='W'){gap=clampd(gap-.22,.7,6.5);snprintf(message,sizeof message,"You step in behind your guard.");}
             if(k=='s'||k=='S'){gap=clampd(gap+.25,.7,6.5);snprintf(message,sizeof message,"You create space.");}
             if(k=='a'||k=='A'){lateral=clampd(lateral-1,-3,3);snprintf(message,sizeof message,"You circle left.");}
